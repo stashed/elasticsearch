@@ -26,7 +26,6 @@ RUN npm install elasticdump@4.1.2 -g
 
 COPY --from=0 /restic_{NEW_RESTIC_VER} /bin/restic_{NEW_RESTIC_VER}
 COPY bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
-COPY hack/docker/es-tools.sh /bin/es-tools.sh
 
 USER nobody:nobody
 

@@ -17,6 +17,7 @@ github.com/PuerkitoBio/urlesc
 github.com/appscode/go/log
 github.com/appscode/go/version
 github.com/appscode/go/flags
+github.com/appscode/go/crypto/rand
 github.com/appscode/go/context
 github.com/appscode/go/sets
 github.com/appscode/go/log/golog
@@ -130,6 +131,7 @@ github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned/ty
 github.com/kubernetes-csi/external-snapshotter/pkg/apis/volumesnapshot/v1alpha1
 github.com/kubernetes-csi/external-snapshotter/pkg/client/clientset/versioned/scheme
 # github.com/mailru/easyjson v0.0.0-20190403194419-1ea4449da983
+github.com/mailru/easyjson
 github.com/mailru/easyjson/jlexer
 github.com/mailru/easyjson/jwriter
 github.com/mailru/easyjson/buffer
@@ -141,6 +143,9 @@ github.com/mitchellh/mapstructure
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
+# github.com/olivere/elastic v6.2.19+incompatible
+github.com/olivere/elastic/config
+github.com/olivere/elastic/uritemplates
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 github.com/peterbourgon/diskv
 # github.com/pkg/errors v0.8.1
@@ -276,6 +281,12 @@ google.golang.org/grpc/binarylog/grpc_binarylog_v1
 google.golang.org/grpc/internal/syscall
 # gopkg.in/inf.v0 v0.9.1
 gopkg.in/inf.v0
+# gopkg.in/olivere/elastic.v5 v5.0.81
+gopkg.in/olivere/elastic.v5
+gopkg.in/olivere/elastic.v5/config
+gopkg.in/olivere/elastic.v5/uritemplates
+# gopkg.in/olivere/elastic.v6 v6.2.19
+gopkg.in/olivere/elastic.v6
 # gopkg.in/robfig/cron.v2 v2.0.0-20150107220207-be2e0b0deed5 => github.com/appscode/cron v0.0.0-20170717094345-ca60c6d796d4
 gopkg.in/robfig/cron.v2
 # gopkg.in/yaml.v2 v2.2.2
@@ -504,7 +515,7 @@ k8s.io/kubernetes/pkg/util/hash
 k8s.io/utils/integer
 k8s.io/utils/buffer
 k8s.io/utils/trace
-# kmodules.xyz/client-go v0.0.0-20190518160232-4afdbc13ba68
+# kmodules.xyz/client-go v0.0.0-20190527113919-eb165836b702
 kmodules.xyz/client-go/logs
 kmodules.xyz/client-go/tools/cli
 kmodules.xyz/client-go/tools/analytics
@@ -521,7 +532,7 @@ kmodules.xyz/custom-resources/client/clientset/versioned/scheme
 kmodules.xyz/custom-resources/apis/appcatalog
 # kmodules.xyz/objectstore-api v0.0.0-20190516233206-ea3ba546e348
 kmodules.xyz/objectstore-api/api/v1
-# kmodules.xyz/offshoot-api v0.0.0-20190513045534-4f3df05f40c2
+# kmodules.xyz/offshoot-api v0.0.0-20190527060812-295f97bb8061
 kmodules.xyz/offshoot-api/api/v1
 # kmodules.xyz/openshift v0.0.0-20190508141315-99ec9fc946bf
 kmodules.xyz/openshift/client/clientset/versioned
@@ -557,7 +568,7 @@ sigs.k8s.io/kustomize/pkg/expansion
 sigs.k8s.io/kustomize/pkg/transformers/config/defaultconfig
 # sigs.k8s.io/yaml v1.1.0
 sigs.k8s.io/yaml
-# stash.appscode.dev/stash v0.0.0-20190523192034-eadca45d8c6b
+# stash.appscode.dev/stash v0.0.0-20190525101310-604af0d5fc92
 stash.appscode.dev/stash/client/clientset/versioned/fake
 stash.appscode.dev/stash/apis
 stash.appscode.dev/stash/client/clientset/versioned/scheme

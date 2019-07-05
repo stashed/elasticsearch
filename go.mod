@@ -5,12 +5,17 @@ go 1.12
 require (
 	cloud.google.com/go v0.39.0 // indirect
 	github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
+	github.com/codeskyblue/go-sh v0.0.0-20190412065543-76bd3d59ff27
 	github.com/gophercloud/gophercloud v0.0.0-20190520235722-e87e5f90e7e6 // indirect
+	github.com/mattn/go-colorable v0.1.2 // indirect
+	github.com/olivere/elastic v6.2.19+incompatible // indirect
 	github.com/prometheus/common v0.4.1 // indirect
 	github.com/prometheus/procfs v0.0.0-20190523193104-a7aeb8df3389 // indirect
 	github.com/spf13/cobra v0.0.4
 	golang.org/x/oauth2 v0.0.0-20190523182746-aaccbc9213b0 // indirect
 	google.golang.org/appengine v1.6.0 // indirect
+	gopkg.in/olivere/elastic.v5 v5.0.81
+	gopkg.in/olivere/elastic.v6 v6.2.19
 	k8s.io/api v0.0.0-20190515023547-db5a9d1c40eb // indirect
 	k8s.io/apiextensions-apiserver v0.0.0-20190515024537-2fd0e9006049 // indirect
 	k8s.io/apimachinery v0.0.0-20190515023456-b74e4c97951f
@@ -20,11 +25,13 @@ require (
 	k8s.io/kube-openapi v0.0.0-20190510232812-a01b7d5d6c22 // indirect
 	k8s.io/kubernetes v1.14.2 // indirect
 	k8s.io/utils v0.0.0-20190520173318-324c5df7d3f0 // indirect
-	kmodules.xyz/client-go v0.0.0-20190518160232-4afdbc13ba68
+	kmodules.xyz/client-go v0.0.0-20190527113919-eb165836b702
 	kmodules.xyz/custom-resources v0.0.0-20190508103408-464e8324c3ec
 	kmodules.xyz/objectstore-api v0.0.0-20190516233206-ea3ba546e348 // indirect
+	kmodules.xyz/offshoot-api v0.0.0-20190527060812-295f97bb8061 // indirect
 	kmodules.xyz/webhook-runtime v0.0.0-20190508094945-962d01212c5b // indirect
-	stash.appscode.dev/stash v0.0.0-20190523192034-eadca45d8c6b
+	sigs.k8s.io/yaml v1.1.0
+	stash.appscode.dev/stash v0.0.0-20190525101310-604af0d5fc92
 )
 
 replace (

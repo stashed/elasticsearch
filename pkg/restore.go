@@ -1,9 +1,14 @@
 package pkg
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/appscode/go/flags"
+	"github.com/appscode/go/log"
+	"github.com/codeskyblue/go-sh"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
@@ -16,27 +21,26 @@ import (
 
 func NewCmdRestore() *cobra.Command {
 	var (
-		masterURL         string
-		kubeconfigPath    string
-		namespace         string
-		appBindingName    string
-		outputDir         string
-		elasticsearchArgs string
-		setupOpt          = restic.SetupOptions{
+		masterURL      string
+		kubeconfigPath string
+		namespace      string
+		appBindingName string
+		outputDir      string
+		esArgs         string
+		setupOpt       = restic.SetupOptions{
 			ScratchDir:  restic.DefaultScratchDir,
 			EnableCache: false,
 		}
-		dumpOpt = restic.DumpOptions{
-			Host:     restic.DefaultHost,
-			FileName: MySqlDumpFile,
+		restoreOpt = restic.RestoreOptions{
+			RestoreDirs: []string{ESDataDir},
 		}
 		metrics = restic.MetricsOptions{
-			JobName: JobMySqlBackup,
+			JobName: JobESBackup,
 		}
 	)
 
 	cmd := &cobra.Command{
-		Use:               "restore-elasticsearch",
+		Use:               "restore-es",
 		Short:             "Restores Elasticsearch DB Backup",
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -78,50 +82,68 @@ func NewCmdRestore() *cobra.Command {
 				return err
 			}
 
+			// clear directory before running multielasticdump
+			log.Infoln("Cleaning up directory", ESDataDir)
+			if err := clearDir(ESDataDir); err != nil {
+				return err
+			}
+
+			var tlsArgs string
+			if appBinding.Spec.ClientConfig.CABundle != nil {
+				if err := ioutil.WriteFile(filepath.Join(setupOpt.ScratchDir, ESCACertFile), appBinding.Spec.ClientConfig.CABundle, os.ModePerm); err != nil {
+					return fmt.Errorf("failed to write key for CA certificate. reason: %v", err)
+				}
+				tlsArgs = fmt.Sprintf("--ca-input=%v", filepath.Join(setupOpt.ScratchDir, ESCACertFile))
+			}
+
+			appSVC := appBinding.Spec.ClientConfig.Service
+			esURL := fmt.Sprintf("%v://%s:%s@%s:%d", appSVC.Scheme, appBindingSecret.Data[ESUser], appBindingSecret.Data[ESPassword], appSVC.Name, appSVC.Port) // TODO: support for authplugin: none
+
 			// init restic wrapper
 			resticWrapper, err := restic.NewResticWrapper(setupOpt)
 			if err != nil {
 				return err
 			}
 
-			// set env for elasticsearch
-			resticWrapper.SetEnv(EnvMySqlPassword, string(appBindingSecret.Data[MySqlPassword]))
-			// setup pipe command
-			dumpOpt.StdoutPipeCommand = restic.Command{
-				Name: MySqlRestoreCMD,
-				Args: []interface{}{
-					"-u", string(appBindingSecret.Data[MySqlUser]),
-					"-h", appBinding.Spec.ClientConfig.Service.Name,
-				},
-			}
-			if elasticsearchArgs != "" {
-				dumpOpt.StdoutPipeCommand.Args = append(dumpOpt.StdoutPipeCommand.Args, elasticsearchArgs)
+			// Run restore
+			restoreOutput, restoreErr := resticWrapper.RunRestore(restoreOpt)
+
+			// run separate shell to restore indices
+			log.Infoln("Performing multielasticdump on ", appSVC.Name)
+			esShell := sh.NewSession()
+			esShell.ShowCMD = false
+			esShell.Stdout = ioutil.Discard
+			esShell.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") //xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
+			esShell.Command("multielasticdump",                 // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+				"--direction=load",
+				fmt.Sprintf(`--input=%v`, ESDataDir),
+				fmt.Sprintf(`--output=%v`, esURL),
+				tlsArgs,
+				esArgs,
+			)
+			if err := esShell.Run(); err != nil {
+				return err
 			}
 
-			// wait for DB ready
-			waitForDBReady(appBinding.Spec.ClientConfig.Service.Name, appBinding.Spec.ClientConfig.Service.Port)
-
-			// Run dump
-			dumpOutput, backupErr := resticWrapper.Dump(dumpOpt)
 			// If metrics are enabled then generate metrics
 			if metrics.Enabled {
-				err := dumpOutput.HandleMetrics(&metrics, backupErr)
+				err := restoreOutput.HandleMetrics(&metrics, restoreErr)
 				if err != nil {
-					return errors.NewAggregate([]error{backupErr, err})
+					return errors.NewAggregate([]error{restoreErr, err})
 				}
 			}
 			// If output directory specified, then write the output in "output.json" file in the specified directory
-			if backupErr == nil && outputDir != "" {
-				err := dumpOutput.WriteOutput(filepath.Join(outputDir, restic.DefaultOutputFileName))
+			if restoreErr == nil && outputDir != "" {
+				err := restoreOutput.WriteOutput(filepath.Join(outputDir, restic.DefaultOutputFileName))
 				if err != nil {
 					return err
 				}
 			}
-			return backupErr
+			return restoreErr
 		},
 	}
 
-	cmd.Flags().StringVar(&elasticsearchArgs, "elasticsearch-args", elasticsearchArgs, "Additional arguments")
+	cmd.Flags().StringVar(&esArgs, "elasticsearch-args", esArgs, "Additional arguments")
 
 	cmd.Flags().StringVar(&masterURL, "master", masterURL, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
 	cmd.Flags().StringVar(&kubeconfigPath, "kubeconfig", kubeconfigPath, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
@@ -138,9 +160,8 @@ func NewCmdRestore() *cobra.Command {
 	cmd.Flags().BoolVar(&setupOpt.EnableCache, "enable-cache", setupOpt.EnableCache, "Specify whether to enable caching for restic")
 	cmd.Flags().IntVar(&setupOpt.MaxConnections, "max-connections", setupOpt.MaxConnections, "Specify maximum concurrent connections for GCS, Azure and B2 backend")
 
-	cmd.Flags().StringVar(&dumpOpt.Host, "hostname", dumpOpt.Host, "Name of the host machine")
-	// TODO: sliceVar
-	cmd.Flags().StringVar(&dumpOpt.Snapshot, "snapshot", dumpOpt.Snapshot, "Snapshot to dump")
+	cmd.Flags().StringVar(&restoreOpt.Host, "hostname", restoreOpt.Host, "Name of the host machine")
+	cmd.Flags().StringSliceVar(&restoreOpt.Snapshots, "snapshot", restoreOpt.Snapshots, "Snapshots to restore")
 
 	cmd.Flags().StringVar(&outputDir, "output-dir", outputDir, "Directory where output.json file will be written (keep empty if you don't need to write output in file)")
 

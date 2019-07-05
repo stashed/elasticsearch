@@ -1,0 +1,37 @@
+apiVersion: stash.appscode.com/v1beta1
+kind: Function
+metadata:
+  name: es-restore-{{- include "elasticsearch-stash.versionSuffix" . }}
+  labels:
+    {{- include "elasticsearch-stash.labels" . | nindent 4 }}
+spec:
+  image: {{ .Values.global.registry }}/{{ .Values.global.image }}:{{ .Values.global.tag }}
+  args:
+  - restore-es
+  # setup information
+  - --provider=${REPOSITORY_PROVIDER:=}
+  - --bucket=${REPOSITORY_BUCKET:=}
+  - --endpoint=${REPOSITORY_ENDPOINT:=}
+  - --rest-server-url=${REPOSITORY_URL:=}
+  - --path=${REPOSITORY_PREFIX:=}
+  - --secret-dir=/etc/repository/secret
+  - --scratch-dir=/tmp
+  - --enable-cache=${ENABLE_CACHE:=true}
+  - --max-connections=${MAX_CONNECTIONS:=0} # 0 indicates use default connection limit
+  - --hostname=${HOSTNAME:=}
+  # target information
+  - --namespace=${NAMESPACE:=default}
+  - --app-binding=${TARGET_NAME:=}
+  - --snapshot=${RESTORE_SNAPSHOTS:=}
+  # output & metric information
+  - --output-dir=${outputDir:=}
+  - --metrics-enabled={{ .Values.global.metrics.enabled }}
+  - --metrics-pushgateway-url=${PROMETHEUS_PUSHGATEWAY_URL:=}
+  {{- if .Values.global.metrics.labels }}
+  - --metrics-labels={{ .Values.global.metrics.labels | quote }}
+  {{- end }}
+  volumeMounts:
+  - name: ${secretVolume}
+    mountPath: /etc/repository/secret
+  - mountPath: /var/pv
+    name: data
