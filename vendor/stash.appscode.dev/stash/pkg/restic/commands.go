@@ -121,10 +121,15 @@ func (w *ResticWrapper) backupFromStdin(options BackupOptions) ([]byte, error) {
 	return w.run(commands...)
 }
 
-func (w *ResticWrapper) cleanup(retentionPolicy v1alpha1.RetentionPolicy) ([]byte, error) {
+func (w *ResticWrapper) cleanup(retentionPolicy v1alpha1.RetentionPolicy, host string) ([]byte, error) {
 	log.Infoln("Cleaning old snapshots according to retention policy")
 
 	args := []interface{}{"forget", "--quiet", "--json"}
+
+	if host != "" {
+		args = append(args, "--host")
+		args = append(args, host)
+	}
 
 	if retentionPolicy.KeepLast > 0 {
 		args = append(args, string(v1alpha1.KeepLast))
@@ -247,9 +252,12 @@ func (w *ResticWrapper) check() ([]byte, error) {
 	return w.run(Command{Name: ResticCMD, Args: args})
 }
 
-func (w *ResticWrapper) stats() ([]byte, error) {
+func (w *ResticWrapper) stats(snapshotID string) ([]byte, error) {
 	log.Infoln("Reading repository status")
 	args := w.appendCacheDirFlag([]interface{}{"stats"})
+	if snapshotID != "" {
+		args = append(args, snapshotID)
+	}
 	args = w.appendMaxConnectionsFlag(args)
 	args = append(args, "--quiet", "--json")
 	args = w.appendCaCertFlag(args)
