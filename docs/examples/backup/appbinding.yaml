@@ -1,0 +1,31 @@
+apiVersion: appcatalog.appscode.com/v1alpha1
+kind: AppBinding
+metadata:
+  creationTimestamp: "2019-06-28T09:39:41Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: database
+    app.kubernetes.io/instance: sample-elasticsearch
+    app.kubernetes.io/managed-by: kubedb.com
+    app.kubernetes.io/name: elasticsearch
+    app.kubernetes.io/version: "6.5"
+    kubedb.com/kind: Elasticsearch
+    kubedb.com/name: sample-elasticsearch
+  name: sample-elasticsearch
+  namespace: demo
+spec:
+  clientConfig:
+    service:
+      name: sample-elasticsearch
+      port: 9200
+      scheme: http
+  secret:
+    name: sample-elasticsearch-auth
+  secretTransforms:
+  - renameKey:
+      from: ADMIN_USERNAME
+      to: username
+  - renameKey:
+      from: ADMIN_PASSWORD
+      to: password
+  type: kubedb.com/elasticsearch

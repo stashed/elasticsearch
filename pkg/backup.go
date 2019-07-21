@@ -1,9 +1,15 @@
 package pkg
 
 import (
+	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/appscode/go/flags"
+	"github.com/appscode/go/log"
+	"github.com/codeskyblue/go-sh"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/errors"
@@ -15,42 +21,42 @@ import (
 )
 
 const (
-	JobMySqlBackup   = "stash-elasticsearch-backup"
-	MySqlUser        = "username"
-	MySqlPassword    = "password"
-	MySqlDumpFile    = "dumpfile.sql"
-	MySqlDumpCMD     = "elasticsearchdump"
-	MySqlRestoreCMD  = "elasticsearch"
-	EnvMySqlPassword = "MYSQL_PWD"
+	JobESBackup  = "stash-es-backup"
+	ESUser       = "ADMIN_USERNAME"
+	ESPassword   = "ADMIN_PASSWORD"
+	ESDumpCMD    = "multielasticdump"
+	ESCACertFile = "root.pem"
+	ESDataDir    = "/var/pv/data"
 )
 
 func NewCmdBackup() *cobra.Command {
 	var (
-		masterURL         string
-		kubeconfigPath    string
-		namespace         string
-		appBindingName    string
-		outputDir         string
-		elasticsearchArgs = "--all-databases"
-		setupOpt          = restic.SetupOptions{
+		masterURL      string
+		kubeconfigPath string
+		namespace      string
+		appBindingName string
+		esArgs         string
+		outputDir      string
+		setupOpt       = restic.SetupOptions{
 			ScratchDir:  restic.DefaultScratchDir,
 			EnableCache: false,
 		}
 		backupOpt = restic.BackupOptions{
-			Host:          restic.DefaultHost,
-			StdinFileName: MySqlDumpFile,
+			Host:       restic.DefaultHost,
+			BackupDirs: []string{ESDataDir},
 		}
 		metrics = restic.MetricsOptions{
-			JobName: JobMySqlBackup,
+			JobName: JobESBackup,
 		}
 	)
 
 	cmd := &cobra.Command{
-		Use:               "backup-elasticsearch",
+		Use:               "backup-es",
 		Short:             "Takes a backup of Elasticsearch DB",
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			flags.EnsureRequiredFlags(cmd, "app-binding", "provider", "secret-dir")
+			time.Sleep(time.Second * 5)
 
 			// apply nice, ionice settings from env
 			var err error
@@ -88,28 +94,48 @@ func NewCmdBackup() *cobra.Command {
 				return err
 			}
 
+			// clear directory before running multielasticdump
+			log.Infoln("Cleaning up directory", ESDataDir)
+			if err := clearDir(ESDataDir); err != nil {
+				return err
+			}
+
+			var tlsArgs string
+			if appBinding.Spec.ClientConfig.CABundle != nil {
+				if err := ioutil.WriteFile(filepath.Join(setupOpt.ScratchDir, ESCACertFile), appBinding.Spec.ClientConfig.CABundle, os.ModePerm); err != nil {
+					return fmt.Errorf("failed to write key for CA certificate. reason: %v", err)
+				}
+				tlsArgs = fmt.Sprintf("--ca-input=%v", filepath.Join(setupOpt.ScratchDir, ESCACertFile))
+			}
+
+			appSVC := appBinding.Spec.ClientConfig.Service
+			esURL := fmt.Sprintf("%v://%s:%s@%s:%d", appSVC.Scheme, appBindingSecret.Data[ESUser], appBindingSecret.Data[ESPassword], appSVC.Name, appSVC.Port) // TODO: authplugin: none
+
+			// wait for DB ready
+			waitForDBReady(appBinding.Spec.ClientConfig.Service.Name, appBinding.Spec.ClientConfig.Service.Port)
+
+			// run separate shell to dump indices
+			log.Infoln("Performing multielasticdump on ", appSVC.Name)
+			esShell := sh.NewSession()
+			esShell.ShowCMD = false
+			esShell.Stdout = ioutil.Discard
+			esShell.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") //xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
+			esShell.Command("multielasticdump",                 // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+				fmt.Sprintf(`--input=%v`, esURL),
+				fmt.Sprintf(`--output=%v`, ESDataDir),
+				"--ignoreType=alias,settings,template", // ref: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+				tlsArgs,
+				esArgs,
+			)
+			if err := esShell.Run(); err != nil {
+				return err
+			}
+
 			// init restic wrapper
 			resticWrapper, err := restic.NewResticWrapper(setupOpt)
 			if err != nil {
 				return err
 			}
-
-			// set env for elasticsearchdump
-			resticWrapper.SetEnv(EnvMySqlPassword, string(appBindingSecret.Data[MySqlPassword]))
-			// setup pipe command
-			backupOpt.StdinPipeCommand = restic.Command{
-				Name: MySqlDumpCMD,
-				Args: []interface{}{
-					"-u", string(appBindingSecret.Data[MySqlUser]),
-					"-h", appBinding.Spec.ClientConfig.Service.Name,
-				},
-			}
-			if elasticsearchArgs != "" {
-				backupOpt.StdinPipeCommand.Args = append(backupOpt.StdinPipeCommand.Args, elasticsearchArgs)
-			}
-
-			// wait for DB ready
-			waitForDBReady(appBinding.Spec.ClientConfig.Service.Name, appBinding.Spec.ClientConfig.Service.Port)
 
 			// Run backup
 			backupOutput, backupErr := resticWrapper.RunBackup(backupOpt)
@@ -131,7 +157,7 @@ func NewCmdBackup() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&elasticsearchArgs, "elasticsearch-args", elasticsearchArgs, "Additional arguments")
+	cmd.Flags().StringVar(&esArgs, "es-args", esArgs, "Additional arguments")
 
 	cmd.Flags().StringVar(&masterURL, "master", masterURL, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
 	cmd.Flags().StringVar(&kubeconfigPath, "kubeconfig", kubeconfigPath, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
@@ -168,4 +194,11 @@ func NewCmdBackup() *cobra.Command {
 	cmd.Flags().StringSliceVar(&metrics.Labels, "metrics-labels", metrics.Labels, "Labels to apply in exported metrics")
 
 	return cmd
+}
+
+func clearDir(dir string) error {
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("unable to clean datadir: %v. Reason: %v", dir, err)
+	}
+	return os.MkdirAll(dir, os.ModePerm)
 }

@@ -1,0 +1,19 @@
+apiVersion: stash.appscode.com/v1beta1
+kind: RestoreSession
+metadata:
+  name: sample-elasticsearch-restore
+  namespace: demo
+  labels:
+    kubedb.com/kind: Elasticsearch
+spec:
+  task:
+    name: es-restore-6-3
+  repository:
+    name: gcs-repo
+  target:
+    ref:
+      apiVersion: appcatalog.appscode.com/v1alpha1
+      kind: AppBinding
+      name: restored-elasticsearch
+  rules:
+  - snapshots: [latest]
