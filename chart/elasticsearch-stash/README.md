@@ -1,6 +1,6 @@
 # Elassricseach-stash
 
-[elasticsearch-stash by AppsCode](https://github.com/stashed/elasticsearch-stash) - Elassricseach database backup/restore plugin for [Stash](https://github.com/stashed/).
+[elasticsearch-stash](https://github.com/stashed/elasticsearch-stash) - Elassricseach database backup/restore plugin for [Stash by AppsCode](https://appscode.com/products/stash/).
 
 ## TL;DR;
 

@@ -14,7 +14,7 @@ section_menu_id: guides
 
 # Backup and Restore Elasticsearch database using Stash
 
-Stash supports backup and restores Elasticsearch database. This guide will show you how you can backup and restore your Elasticsearch database with Stash.
+Stash 0.9.0+ supports backup and restoration of Elasticsearch clusters. This guide will show you how you can backup and restore your Elasticsearch database with Stash.
 
 ## Before You Begin
 
@@ -42,7 +42,7 @@ $ kubectl create ns demo
 namespace/demo created
 ```
 
->Note: YAML files used in this tutorial are stored [here](https://github.com/stashed/elasticsearch/examples/).
+>Note: YAML files used in this tutorial are stored [here](https://github.com/stashed/elasticsearch/tree/master/docs/examples).
 
 ## Install Elasticsearch Catalog for Stash
 
@@ -61,7 +61,7 @@ helm install appscode/elasticsearch-catalog --name elasticsearch-catalog
 Once installed, this will create `es-backup-*` and `es-recovery-*` Functions for all supported Elasticsearch versions. Verify that the Functions has been created successfully by,
 
 ```console
-$ kubectl get function
+$ kubectl get functions.stash.appscode.com
 NAME             AGE
 es-backup-5.6   6s
 es-backup-6.2   6s
@@ -79,7 +79,7 @@ update-status    6d19h
 This will also create `es-backup-*` and `es-restore-*` Tasks for all supported Elasticsearch versions. Verify that they have been created successfully by,
 
 ```console
-$ kubectl get task
+$ kubectl get tasks.stash.appscode.com
 NAME             AGE
 NAME             AGE
 es-backup-5.6    10s
@@ -265,7 +265,7 @@ kwuagqng
 
 **Insert Sample Data:**
 
-Now, we will exec into the database pod and create some sample data. At first, find out the database pod using the following command,
+Now, we are going to exec into the database pod and create some sample data. At first, find out the database pod using the following command,
 
 ```console
 $ kubectl get pods -n demo --selector="kubedb.com/name=sample-elasticsearch"
@@ -405,9 +405,9 @@ sample-elasticsearch-backup   */5 * * * *   False     0        <none>          1
 
 **Wait for BackupSession:**
 
-The `sample-elasticsearch-backup` CronJob will trigger a backup on each schedule by creating a `BackpSession` crd.
+The `sample-elasticsearch-backup` CronJob will trigger a backup on each scheduled slot by creating a `BackpSession` crd.
 
-Wait for a schedule to appear. Run the following command to watch `BackupSession` crd,
+Wait for the next schedule. Run the following command to watch `BackupSession` crd,
 
 ```console
 $ kubectl get backupsession -n demo -w
@@ -416,7 +416,7 @@ sample-elasticsearch-backup-1561717803   sample-elasticsearch-backup   Running  
 sample-elasticsearch-backup-1561717803   sample-elasticsearch-backup   Succeeded   5m45s
 ```
 
-We can see above that the backup session has succeeded. Now, we will verify that the backed up data has been stored in the backend.
+We can see above that the backup session has succeeded. Now, we are going to verify that the backed up data has been stored in the backend.
 
 **Verify Backup:**
 
@@ -428,19 +428,19 @@ NAME       INTEGRITY   SIZE        SNAPSHOT-COUNT   LAST-SUCCESSFUL-BACKUP   AGE
 gcs-repo   true        1.140 KiB   1                1m                       26m
 ```
 
-Now, if we navigate to the GCS bucket, we will see backed up data has been stored in `demo/elasticsearch/sample-elasticsearch` directory as specified by `spec.backend.gcs.prefix` field of Repository crd.
+Now, if we navigate to the GCS bucket, we are going to see backed up data has been stored in `demo/elasticsearch/sample-elasticsearch` directory as specified by `spec.backend.gcs.prefix` field of Repository crd.
 
 >Note: Stash keeps all the backed up data encrypted. So, data in the backend will not make any sense until they are decrypted.
 
 ## Restore Elasticsearch
 
-We will restore the database from the backup we have taken in the previous section. We will deploy a new database and initialize it from the backup.
+We are going to restore the database from the backup we have taken in the previous section. We are going to deploy a new database and initialize it from the backup.
 
 **Deploy Restored Database:**
 
 Now, we have to deploy the restored database similarly as we have deployed the original `sample-psotgres` database. However, this time there will be the following differences:
 
-- We have to use the same secret that was used in the original database. We will specify it using `spec.databaseSecret` field.
+- We have to use the same secret that was used in the original database. We are going to specify it using `spec.databaseSecret` field.
 - We have to specify `spec.init` section to tell KubeDB that we are going to use Stash to initialize this database from backup. KubeDB will keep the database phase to `Initializing` until Stash finishes its initialization.
 
 Below is the YAML for `Elasticsearch` crd we are going deploy to initialize from backup,
@@ -558,7 +558,7 @@ So, we can see from the output of the above command that the restore process suc
 
 **Verify Restored Data:**
 
-In this section, we will verify that the desired data has been restored successfully. We will connect to the database and check whether the table we had created in the original database is restored or not.
+In this section, we are going to verify that the desired data has been restored successfully. We are going to connect to the database and check whether the table we had created in the original database is restored or not.
 
 At first, check if the database has gone into `Running` state by the following command,
 
