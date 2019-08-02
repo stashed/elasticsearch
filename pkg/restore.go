@@ -32,7 +32,7 @@ func NewCmdRestore() *cobra.Command {
 			EnableCache: false,
 		}
 		restoreOpt = restic.RestoreOptions{
-			RestoreDirs: []string{ESDataDir},
+			RestorePaths: []string{ESDataDir},
 		}
 		metrics = restic.MetricsOptions{
 			JobName: JobESBackup,

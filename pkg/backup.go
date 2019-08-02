@@ -42,8 +42,8 @@ func NewCmdBackup() *cobra.Command {
 			EnableCache: false,
 		}
 		backupOpt = restic.BackupOptions{
-			Host:       restic.DefaultHost,
-			BackupDirs: []string{ESDataDir},
+			Host:        restic.DefaultHost,
+			BackupPaths: []string{ESDataDir},
 		}
 		metrics = restic.MetricsOptions{
 			JobName: JobESBackup,
