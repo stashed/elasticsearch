@@ -1,12 +1,12 @@
 apiVersion: stash.appscode.com/v1beta1
 kind: Task
 metadata:
-  name: es-backup-{{- include "elasticsearch-stash.versionSuffix" . }}
+  name: es-backup-{{- include "stash-elasticsearch.versionSuffix" . }}
   labels:
-    {{- include "elasticsearch-stash.labels" . | nindent 4 }}
+    {{- include "stash-elasticsearch.labels" . | nindent 4 }}
 spec:
   steps:
-  - name: es-backup-{{- include "elasticsearch-stash.versionSuffix" . }}
+  - name: es-backup-{{- include "stash-elasticsearch.versionSuffix" . }}
     params:
     - name: outputDir
       value: /tmp/output
@@ -23,7 +23,7 @@ spec:
   - name: data
   {{- if .Values.persistence.enabled }}
     persistentVolumeClaim:
-      claimName: {{ .Values.persistence.existingClaim | default (printf "datadir-%s" (include "elasticsearch-stash.versionSuffix" . )) }}
+      claimName: {{ .Values.persistence.existingClaim | default (printf "datadir-%s" (include "stash-elasticsearch.versionSuffix" . )) }}
   {{- else }}
     emptyDir: {}
   {{- end }}

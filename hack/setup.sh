@@ -8,7 +8,7 @@ DOWNLOAD_DIR=""
 TEMP_DIRS=()
 
 HELM=""
-CHART_NAME="elasticsearch-stash"
+CHART_NAME="stash-elasticsearch"
 CHART_LOCATION="chart"
 
 APPSCODE_ENV=${APPSCODE_ENV:-prod}
@@ -73,19 +73,19 @@ function downloadFile() {
 trap cleanup EXIT
 
 show_help() {
-  echo "install.sh - install elasticsearch-stash catalog for stash"
+  echo "install.sh - install stash-elasticsearch catalog for stash"
   echo " "
   echo "install.sh [options]"
   echo " "
   echo "options:"
   echo "-h, --help                             show brief help"
-  echo "    --docker-registry                  docker registry used to pull elasticsearch-stash images (default: appscode)"
-  echo "    --image-tag                        tag to use to pull elasticsearch-stash docker image"
+  echo "    --docker-registry                  docker registry used to pull stash-elasticsearch images (default: appscode)"
+  echo "    --image-tag                        tag to use to pull stash-elasticsearch docker image"
   echo "    --backup-args                      optional arguments to pass to pgdump command during backup"
   echo "    --restore-args                     optional arguments to pass to psql command during restore"
   echo "    --metrics-enabled                  specify whether to send prometheus metrics during backup or restore (default: true)"
   echo "    --metrics-labels                   labels to apply to prometheus metrics for backup or restore process (format: k1=v1,k2=v2)"
-  echo "    --uninstall                        uninstall elasticsearch-stash catalog"
+  echo "    --uninstall                        uninstall stash-elasticsearch catalog"
 }
 
 while test $# -gt 0; do
@@ -178,7 +178,7 @@ if [ "$UNINSTALL" -eq 1 ]; then
   | kubectl delete -f -
   
   echo " "
-  echo "Successfully uninstalled elasticsearch-stash catalog"
+  echo "Successfully uninstalled stash-elasticsearch catalog"
 else
 # render the helm template and apply the resulting YAML
 $HELM template ${CHART_LOCATION}/${CHART_NAME} \
@@ -191,5 +191,5 @@ $HELM template ${CHART_LOCATION}/${CHART_NAME} \
 | kubectl apply -f -
 
 echo " "
-echo "Successfully installed elasticsearch-stash catalog"
+echo "Successfully installed stash-elasticsearch catalog"
 fi

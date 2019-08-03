@@ -1,13 +1,13 @@
 # Elassricseach-stash
 
-[elasticsearch-stash](https://github.com/stashed/elasticsearch-stash) - Elassricseach database backup/restore plugin for [Stash by AppsCode](https://appscode.com/products/stash/).
+[stash-elasticsearch](https://github.com/stashed/stash-elasticsearch) - Elassricseach database backup/restore plugin for [Stash by AppsCode](https://appscode.com/products/stash/).
 
 ## TL;DR;
 
 ```console
 helm repo add appscode https://charts.appscode.com/stable/
 helm repo update
-helm install appscode/elasticsearch-stash --name=elasticsearch-stash-6.3 --version=6.3
+helm install appscode/stash-elasticsearch --name=stash-elasticsearch-6.3 --version=6.3
 ```
 
 ## Introduction
@@ -32,20 +32,20 @@ helm repo add appscode https://charts.appscode.com/stable/
 helm repo update
 ```
 
-- Install the chart with the release name `elasticsearch-stash-6.3` run the following command,
+- Install the chart with the release name `stash-elasticsearch-6.3` run the following command,
 
 ```console
-helm install appscode/elasticsearch-stash --name=elasticsearch-stash-6.3 --version=6.3
+helm install appscode/stash-elasticsearch --name=stash-elasticsearch-6.3 --version=6.3
 ```
 
 The above commands installs `Functions` and `Task` crds that are necessary to backup Elassricseach database 6.3 using Stash.
 
 ## Uninstalling the Chart
 
-To uninstall/delete the `elasticsearch-stash-6.3` run the following command,
+To uninstall/delete the `stash-elasticsearch-6.3` run the following command,
 
 ```console
-helm delete elasticsearch-stash-6.3
+helm delete stash-elasticsearch-6.3
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
@@ -57,7 +57,7 @@ The following table lists the configurable parameters of the `postgre-stash` cha
 | Parameter                   | Description                                                  | Default               |
 | --------------------------- | :----------------------------------------------------------- | --------------------- |
 | `global.registry`           | Docker registry used to pull respective images               | `appscode`            |
-| `global.image`              | Docker image used to backup/restore PosegreSQL database      | `elasticsearch-stash` |
+| `global.image`              | Docker image used to backup/restore PosegreSQL database      | `stash-elasticsearch` |
 | `global.tag`                | Tag of the image that is used to backup/restore Elassricseach database. This is usually same as the database version it can backup. | `6.3`                 |
 | `global.backup.esArgs`      | Optional arguments to pass to `esdump` command  while bakcup |                       |
 | `global.restore.esArgs`     | Optional arguments to pass to `psql` command while restore   |                       |
@@ -78,11 +78,11 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 For example:
 
 ```console
-helm install --name elasticsearch-stash-6.3 --set global.metrics.enabled=false appscode/elasticsearch-stash
+helm install --name stash-elasticsearch-6.3 --set global.metrics.enabled=false appscode/stash-elasticsearch
 ```
 
 **Tips:** Use escape character (`\`) while providing multiple comma-separated labels for `global.metrics.labels`.
 
 ```console
- helm install chart/elasticsearch-stash --set global.metrics.labels="k1=v1\,k2=v2"
+ helm install chart/stash-elasticsearch --set global.metrics.labels="k1=v1\,k2=v2"
 ```

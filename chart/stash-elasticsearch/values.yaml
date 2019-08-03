@@ -1,11 +1,11 @@
-# Default values for elasticsearch-stash.
+# Default values for stash-elasticsearch.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 # we are declaring these values as global so that parent chart can overwrite them
 global:
-  registry: appscode
-  image: elasticsearch-stash
+  registry: stashed
+  image: stash-elasticsearch
   tag: 6.3
 
   # optional argument to send esdump or psql command

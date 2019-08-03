@@ -2,10 +2,10 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: datadir-{{- include "elasticsearch-stash.versionSuffix" . }}
+  name: datadir-{{- include "stash-elasticsearch.versionSuffix" . }}
   namespace: {{ .Values.persistence.namespace | default "default" }}
   labels:
-    {{- include "elasticsearch-stash.labels" . | nindent 4 }}
+    {{- include "stash-elasticsearch.labels" . | nindent 4 }}
 {{- if .Values.persistence.annotations }}
   annotations:
 {{ toYaml .Values.persistence.annotations | indent 4 }}
