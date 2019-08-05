@@ -32,7 +32,8 @@ func NewCmdRestore() *cobra.Command {
 			EnableCache: false,
 		}
 		restoreOpt = restic.RestoreOptions{
-			RestoreDirs: []string{ESDataDir},
+			RestorePaths: []string{ESDataDir},
+			Host:         restic.DefaultHost,
 		}
 		metrics = restic.MetricsOptions{
 			JobName: JobESBackup,
@@ -161,6 +162,7 @@ func NewCmdRestore() *cobra.Command {
 	cmd.Flags().IntVar(&setupOpt.MaxConnections, "max-connections", setupOpt.MaxConnections, "Specify maximum concurrent connections for GCS, Azure and B2 backend")
 
 	cmd.Flags().StringVar(&restoreOpt.Host, "hostname", restoreOpt.Host, "Name of the host machine")
+	cmd.Flags().StringVar(&restoreOpt.SourceHost, "source-hostname", restoreOpt.SourceHost, "Name of the host whose data will be restored")
 	cmd.Flags().StringSliceVar(&restoreOpt.Snapshots, "snapshot", restoreOpt.Snapshots, "Snapshots to restore")
 
 	cmd.Flags().StringVar(&outputDir, "output-dir", outputDir, "Directory where output.json file will be written (keep empty if you don't need to write output in file)")
