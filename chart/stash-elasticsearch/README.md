@@ -1,4 +1,4 @@
-# Stash-elasticserach
+# stash-elasticserach
 
 [stash-elasticsearch](https://github.com/stashed/stash-elasticsearch) - Elasticsearch database backup/restore plugin for [Stash by AppsCode](https://appscode.com/products/stash/).
 
@@ -20,13 +20,13 @@ This chart installs necessary `Function` and `Task` definition to backup or rest
 
 ## Installing the Chart
 
-- Add AppsCode chart repository to your helm repository list,
+- Add AppsCode chart repository to your helm repository list.
 
 ```console
 helm repo add appscode https://charts.appscode.com/stable/
 ```
 
-- Update helm repositories to fetch latest charts from the remove repository,
+- Update helm repositories to fetch latest charts from the remove repository.
 
 ```console
 helm repo update
@@ -52,15 +52,15 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ## Configuration
 
-The following table lists the configurable parameters of the `postgre-stash` chart and their default values.
+The following table lists the configurable parameters of the `stash-elasticsearch` chart and their default values.
 
-|          Parameter          |                                                             Description                                                             |        Default        |
+| Parameter                   | Description                                                                                                                         |        Default        |
 | --------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
 | `docker.registry`           | Docker registry used to pull respective images                                                                                      | `stashed`             |
 | `docker.image`              | Docker image used to backup/restore PosegreSQL database                                                                             | `stash-elasticsearch` |
 | `docker.tag`                | Tag of the image that is used to backup/restore Elasticsearch database. This is usually same as the database version it can backup. | `6.3`                 |
-| `backup.esArgs`             | Optional arguments to pass to `multielasticdump` command  while bakcup                                                              |                       |
-| `restore.esArgs`            | Optional arguments to pass to `multielasticdump` command while restore                                                              |                       |
+| `backup.esArgs`             | Optional arguments to pass to `multielasticdump` command  during bakcup process                                                     |                       |
+| `restore.esArgs`            | Optional arguments to pass to `multielasticdump` command during restore process                                                     |                       |
 | `metrics.enabled`           | Specifies whether to send Prometheus metrics                                                                                        | `true`                |
 | `metrics.labels`            | Optional comma separated labels to add to the Prometheus metrics                                                                    |                       |
 | `persistence.enabled`       | Enable persistence using PVC. If `false`, a `empty directory` volume will be used  for elastic backup directory.                    | `false`               |
