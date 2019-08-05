@@ -35,7 +35,7 @@ Create chart name and version as used by the chart label.
 {{- .Chart.Version | replace "." "-" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-# default labels for posgres-stash resources
+# default labels for stash-elasticsearch resources
 {{- define "stash-elasticsearch.labels" -}}
 app.kubernetes.io/name: {{ include "stash-elasticsearch.name" . }}
 helm.sh/chart: {{ include "stash-elasticsearch.chart" . }}

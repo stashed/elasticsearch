@@ -2,22 +2,21 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# we are declaring these values as global so that parent chart can overwrite them
-global:
+docker:
   registry: stashed
   image: stash-elasticsearch
   tag: 6.3
 
-  # optional argument to send esdump or psql command
-  backup:
-    esArgs: ""
-  restore:
-    esArgs: ""
+# optional argument to send multielasticdump
+backup:
+  esArgs: ""
+restore:
+  esArgs: ""
 
-  # default values for prometheus metrics
-  metrics:
-    enabled: true
-    labels: []
+# default values for prometheus metrics
+metrics:
+  enabled: true
+  labels: []
 
 ## Persist data to a persistent volume
 persistence:
