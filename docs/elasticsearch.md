@@ -156,7 +156,7 @@ metadata:
   name: sameple-elasticsearch
   namespace: demo
 spec:
-  version: "6.3-v1"
+  version: "6.5"
   storageType: Durable
   storage:
     storageClassName: "standard"
@@ -411,7 +411,7 @@ metadata:
 spec:
   schedule: "*/5 * * * *"
   task:
-    name: elasticsearch-backup-5.6
+    name: elasticsearch-backup-6.5
   repository:
     name: gcs-repo
   target:
@@ -498,7 +498,7 @@ Now, wait for a moment. Stash will pause the BackupConfiguration. Verify that th
 ```console
 $ kubectl get backupconfiguration -n demo sample-elasticsearch-backup
 NAME                         TASK                            SCHEDULE      PAUSED   AGE
-sample-elasticsearch-backup  elasticsearch-backup-5.6        */5 * * * *   true     26m
+sample-elasticsearch-backup  elasticsearch-backup-6.5        */5 * * * *   true     26m
 ```
 
 Notice the `PAUSED` column. Value `true` for this field means that the BackupConfiguration has been paused.
