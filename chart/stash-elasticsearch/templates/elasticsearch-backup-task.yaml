@@ -1,12 +1,12 @@
 apiVersion: stash.appscode.com/v1beta1
 kind: Task
 metadata:
-  name: elasticsearch-backup-{{- include "stash-elasticsearch.versionSuffix" . }}
+  name: elasticsearch-backup-{{- .Chart.Version }}
   labels:
     {{- include "stash-elasticsearch.labels" . | nindent 4 }}
 spec:
   steps:
-  - name: elasticsearch-backup-{{- include "stash-elasticsearch.versionSuffix" . }}
+  - name: elasticsearch-backup-{{- .Chart.Version }}
     params:
     - name: outputDir
       value: /tmp/output
