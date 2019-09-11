@@ -61,8 +61,6 @@ The following table lists the configurable parameters of the `stash-elasticsearc
 | `docker.tag`                | Tag of the image that is used to backup/restore Elasticsearch database. This is usually same as the database version it can backup. | `6.3`                 |
 | `backup.esArgs`             | Optional arguments to pass to `multielasticdump` command  during bakcup process                                                     |                       |
 | `restore.esArgs`            | Optional arguments to pass to `multielasticdump` command during restore process                                                     |                       |
-| `metrics.enabled`           | Specifies whether to send Prometheus metrics                                                                                        | `true`                |
-| `metrics.labels`            | Optional comma separated labels to add to the Prometheus metrics                                                                    |                       |
 | `persistence.enabled`       | Enable persistence using PVC. If `false`, a `empty directory` volume will be used  for elastic backup directory.                    | `false`               |
 | `persistence.existingClaim` | Provide an existing `PersistentVolumeClaim`, the value is evaluated as a template.                                                  | `nil`                 |
 | `persistence.namespace`     | The namespace where `pvc` is created. This namespace needs to be same as `backupsession` or  `restoresession` namespace.            | `default`             |
@@ -76,11 +74,5 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 For example:
 
 ```console
-helm install --name stash-elasticsearch-6.3 --set metrics.enabled=false appscode/stash-elasticsearch
-```
-
-**Tips:** Use escape character (`\`) while providing multiple comma-separated labels for `metrics.labels`.
-
-```console
- helm install chart/stash-elasticsearch --set metrics.labels="k1=v1\,k2=v2"
+helm install --name stash-elasticsearch-6.3 --set docker.registry=my-registry appscode/stash-elasticsearch
 ```
