@@ -13,11 +13,6 @@ backup:
 restore:
   esArgs: ""
 
-# default values for prometheus metrics
-metrics:
-  enabled: true
-  labels: []
-
 ## Persist data to a persistent volume
 persistence:
   enabled: false
