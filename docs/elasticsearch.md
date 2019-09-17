@@ -1,15 +1,15 @@
 ---
-title: Backup Elasticsearch | Stash
-description: Backup Elasticsearch database using Stash
+title: Elasticsearch | Stash
+description: Backup and restore Elasticsearch database using Stash
 menu:
-  product_stash_0.8.3:
-    identifier: database-elasticsearch
-    name: Elasticsearch
-    parent: database
-    weight: 20
+  product_stash_{{ .version }}:
+    identifier: standalone-elasticsearch-{{ .subproject_version }}
+    name: Standalone Elasticsearch
+    parent: stash-elasticsearch-guides-{{ .subproject_version }}
+    weight: 10
 product_name: stash
-menu_name: product_stash_0.8.3
-section_menu_id: guides
+menu_name: product_stash_{{ .version }}
+section_menu_id: stash-addons
 ---
 
 # Backup and Restore Elasticsearch database using Stash
@@ -19,21 +19,18 @@ Stash 0.9.0+ supports backup and restoration of Elasticsearch clusters. This gui
 ## Before You Begin
 
 - At first, you need to have a Kubernetes cluster, and the `kubectl` command-line tool must be configured to communicate with your cluster. If you do not already have a cluster, you can create one by using Minikube.
-
-- Install Stash in your cluster following the steps [here](https://appscode.com/products/stash/0.8.3/setup/install/).
-
-- Install [KubeDB](https://kubedb.com) in your cluster following the steps [here](https://kubedb.com/docs/latest/setup/install/). This step is optional. You can deploy your database using any method you want. We are using KubeDB because it automates some tasks that you have to do manually otherwise.
-
-- If you are not familiar with how Stash backup and restore databases, please check the following guide:
-  - [How Stash backup and restore databases](https://appscode.com/products/stash/0.8.3/guides/databases/overview/).
+- Install Stash in your cluster following the steps [here](/docs/setup/install.md).
+- Install Elasticsearch addon for Stash following the steps [here](/docs/addons/elasticsearch/setup/install.md)
+- Install [KubeDB](https://kubedb.com) in your cluster following the steps [here](https://kubedb.com/docs/setup/install/). This step is optional. You can deploy your database using any method you want. We are using KubeDB because KubeDB simplifies many of the difficult or tedious management tasks of running a production grade databases on private and public clouds.
+- If you are not familiar with how Stash backup and restore Elasticsearch databases, please check the following guide [here](/docs/addons/elasticsearch/overview.md).
 
 You have to be familiar with following custom resources:
 
-- [AppBinding](https://appscode.com/products/stash/0.8.3/concepts/crds/appbinding/)
-- [Function](https://appscode.com/products/stash/0.8.3/concepts/crds/function/)
-- [Task](https://appscode.com/products/stash/0.8.3/concepts/crds/task/)
-- [BackupConfiguration](https://appscode.com/products/stash/0.8.3/concepts/crds/backupconfiguration/)
-- [RestoreSession](https://appscode.com/products/stash/0.8.3/concepts/crds/restoresession/)
+- [AppBinding](/docs/concepts/crds/appbinding.md)
+- [Function](/docs/concepts/crds/function.md)
+- [Task](/docs/concepts/crds/task.md)
+- [BackupConfiguration](/docs/concepts/crds/backupconfiguration.md)
+- [RestoreSession](/docs/concepts/crds/restoresession.md)
 
 To keep things isolated, we are going to use a separate namespace called `demo` throughout this tutorial. Create `demo` namespace if you haven't created yet.
 
@@ -44,102 +41,9 @@ namespace/demo created
 
 >Note: YAML files used in this tutorial are stored [here](https://github.com/stashed/elasticsearch/tree/master/docs/examples).
 
-## Install Elasticsearch Catalog for Stash
-
-Stash uses a `Function-Task` model to backup databases. We have to install Elasticsearch catalogs (`stash-elasticsearch`) for Stash. This catalog creates necessary `Function` and `Task` definitions to backup/restore Elasticsearch databases.
-
-You can install the catalog either as a helm chart or you can create only the YAMLs of the respective resources.
-
-<ul class="nav nav-tabs" id="installerTab" role="tablist">
-  <li class="nav-item">
-    <a class="nav-link" id="helm-tab" data-toggle="tab" href="#helm" role="tab" aria-controls="helm" aria-selected="false">Helm</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link active" id="script-tab" data-toggle="tab" href="#script" role="tab" aria-controls="script" aria-selected="true">Script</a>
-  </li>
-</ul>
-<div class="tab-content" id="installerTabContent">
- <!-- ------------ Helm Tab Begins----------- -->
-  <div class="tab-pane fade" id="helm" role="tabpanel" aria-labelledby="helm-tab">
-
-### Install as chart release
-
-Run the following script to install `stash-elasticsearch` catalog as a Helm chart.
-
-```console
-curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/chart.sh | bash -s -- --catalog=stash-elasticsearch
-```
-
-</div>
-<!-- ------------ Helm Tab Ends----------- -->
-
-<!-- ------------ Script Tab Begins----------- -->
-<div class="tab-pane fade show active" id="script" role="tabpanel" aria-labelledby="script-tab">
-
-### Install only YAMLs
-
-Run the following script to install `stash-elasticsearch` catalog as Kubernetes YAMLs.
-
-```console
-curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/script.sh | bash -s -- --catalog=stash-elasticsearch
-```
-
-</div>
-<!-- ------------ Script Tab Ends----------- -->
-</div>
-
-Once installed, this will create `elasticsearch-backup-*` and `elasticsearch-restore-*` Functions for all supported Elasticsearch versions. To verify, run the following command:
-
-```console
-$ kubectl get functions.stash.appscode.com
-NAME                        AGE
-elasticsearch-backup-7.2    20s
-elasticsearch-backup-6.8    20s
-elasticsearch-backup-6.5    19s
-elasticsearch-backup-6.4    20s
-elasticsearch-backup-6.3    20s
-elasticsearch-backup-6.2    20s
-elasticsearch-backup-5.6    20s
-elasticsearch-restore-7.2   20s
-elasticsearch-restore-6.8   20s
-elasticsearch-restore-6.5   19s
-elasticsearch-restore-6.4   20s
-elasticsearch-restore-6.3   20s
-elasticsearch-restore-6.2   20s
-elasticsearch-restore-5.6   20s
-pvc-backup                  7h6m
-pvc-restore                 7h6m
-update-status               7h6m
-```
-
-Also, verify that the necessary `Task` have been created.
-
-```console
-$ kubectl get tasks.stash.appscode.com
-NAME                        AGE
-elasticsearch-backup-7.2    2m7s
-elasticsearch-backup-6.8    2m7s
-elasticsearch-backup-6.5    2m6s
-elasticsearch-backup-6.4    2m7s
-elasticsearch-backup-6.3    2m7s
-elasticsearch-backup-6.2    2m7s
-elasticsearch-backup-5.6    2m7s
-elasticsearch-restore-7.2   2m7s
-elasticsearch-restore-6.8   2m7s
-elasticsearch-restore-6.5   2m6s
-elasticsearch-restore-6.4   2m7s
-elasticsearch-restore-6.3   2m7s
-elasticsearch-restore-6.2   2m7s
-elasticsearch-restore-5.6   2m7s
-pvc-backup                  7h7m
-pvc-restore                 7h7m
-```
-
-Now, Stash is ready to backup Elasticsearch database.
-
 ## Backup Elasticsearch
 
-This section will demonstrate how to backup Elasticsearch databse. Here, we are going to deploy a Elasticsearch database using KubeDB. Then, we are going to backup this database into a GCS bucket. Finally, we are going to restore the backed up data into another Elasticsearch database.
+This section will demonstrate how to backup Elasticsearch database. Here, we are going to deploy a Elasticsearch database using KubeDB. Then, we are going to backup this database into a GCS bucket. Finally, we are going to restore the backed up data into another Elasticsearch database.
 
 ### Deploy Sample Elasticsearch Database
 
@@ -171,7 +75,7 @@ spec:
 Create the above `Elasticsearch` crd,
 
 ```console
-$ kubectl apply -f ./docs/examples/backup/elasticsearch.yaml
+$ kubectl apply -f https://github.com/stashed/elasticsearch/raw/{{< param "info.subproject_version" >}}/docs/examples/backup/elasticsearch.yaml
 elasticsearch.kubedb.com/sample-elasticsearch created
 ```
 
@@ -199,7 +103,7 @@ sample-elasticsearch          ClusterIP   10.108.14.89   <none>        9200/TCP 
 sample-elasticsearch-master   ClusterIP   10.108.8.186   <none>        9300/TCP   15m
 ```
 
-Here, we have to use service `sample-elasticsearch` and secret `sample-elasticsearch-auth` to connect with the database. KubeDB creates an [AppBinding](https://appscode.com/products/stash/0.8.3/concepts/crds/appbinding/) crd that holds the necessary information to connect with the database.
+Here, we have to use service `sample-elasticsearch` and secret `sample-elasticsearch-auth` to connect with the database. KubeDB creates an [AppBinding](/docs/concepts/crds/appbinding.md) crd that holds the necessary information to connect with the database.
 
 **Verify AppBinding:**
 
@@ -350,7 +254,7 @@ Now, we are ready to backup this sample database.
 
 ### Prepare Backend
 
-We are going to store our backed up data into a GCS bucket. At first, we need to create a secret with GCS credentials then we need to create a `Repository` crd. If you want to use a different backend, please read the respective backend configuration doc from [here](https://appscode.com/products/stash/0.8.3/guides/backends/overview/).
+We are going to store our backed up data into a GCS bucket. At first, we need to create a secret with GCS credentials then we need to create a `Repository` crd. If you want to use a different backend, please read the respective backend configuration doc from [here](/docs/guides/latest/backends/overview.md).
 
 **Create Storage Secret:**
 
@@ -388,7 +292,7 @@ spec:
 Let's create the `Repository` we have shown above,
 
 ```console
-$ kubectl apply -f ./docs/examples/backup/repository.yaml
+$ kubectl apply -f https://github.com/stashed/elasticsearch/raw/{{< param "info.subproject_version" >}}/docs/examples/backup/repository.yaml
 repository.stash.appscode.com/gcs-repo created
 ```
 
@@ -427,13 +331,13 @@ spec:
 Here,
 
 - `spec.schedule` specifies that we want to backup the database at 5 minutes interval.
-- `spec.task.name` specifies the name of the task crd that specifies the necessary Function and their execution order to backup a Elasticsearch databse.
+- `spec.task.name` specifies the name of the task crd that specifies the necessary Function and their execution order to backup a Elasticsearch database.
 - `spec.target.ref` refers to the `AppBinding` crd that was created for `sample-elasticsearch` database.
 
 Let's create the `BackupConfiguration` crd we have shown above,
 
 ```console
-$ kubectl apply -f ./docs/examples/backup/backupconfiguration.yaml
+$ kubectl apply -f https://github.com/stashed/elasticsearch/raw/{{< param "info.subproject_version" >}}/docs/examples/backup/backupconfiguration.yaml
 backupconfiguration.stash.appscode.com/sample-elasticsearch-backup created
 ```
 
@@ -543,7 +447,7 @@ Here,
 Let's create the above database,
 
 ```console
-$ kubectl apply -f ./docs/examples/restore/restored-elasticsearch.yaml
+$ kubectl apply -f https://github.com/stashed/elasticsearch/raw/{{< param "info.subproject_version" >}}/docs/examples/restore/restored-elasticsearch.yaml
 elasticsearch.kubedb.com/restored-elasticsearch created
 ```
 
@@ -598,15 +502,15 @@ Here,
 - `metadata.labels` specifies a `kubedb.com/kind: Elasticsearch` label that is used by KubeDB to watch this `RestoreSession`.
 - `spec.task.name` specifies the name of the `Task` crd that specifies the Functions and their execution order to restore a Elasticsearch database.
 - `spec.repository.name` specifies the `Repository` crd that holds the backend information where our backed up data has been stored.
-- `spec.target.ref` refers to the AppBinding crd for the `restored-elasticsearch` databse.
+- `spec.target.ref` refers to the AppBinding crd for the `restored-elasticsearch` database.
 - `spec.rules` specifies that we are restoring from the latest backup snapshot of the database.
 
-> **Warning:** Label `kubedb.com/kind: Elasticsearch` is mandatory if you are uisng KubeDB to deploy the databse. Otherwise, the database will be stuck in `Initializing` state.
+> **Warning:** Label `kubedb.com/kind: Elasticsearch` is mandatory if you are using KubeDB to deploy the database. Otherwise, the database will be stuck in `Initializing` state.
 
 Let's create the `RestoreSession` crd we have shown above,
 
 ```console
-$ kubectl apply -f ./docs/examples/restore/restoresession.yaml
+$ kubectl apply -f https://github.com/stashed/elasticsearch/raw/{{< param "info.subproject_version" >}}/docs/examples/restore/restoresession.yaml
 restoresession.stash.appscode.com/sample-elasticsearch-restore created
 ```
 
@@ -675,43 +579,3 @@ kubectl delete backupconfiguration -n demo sample-elasticsearch-backup
 kubectl delete es -n demo restored-elasticsearch
 kubectl delete es -n demo sample-elasticsearch
 ```
-
-To cleanup the Elasticsearch catalogs that we had created earlier, run the following:
-
-<ul class="nav nav-tabs" id="uninstallerTab" role="tablist">
-  <li class="nav-item">
-    <a class="nav-link" id="helm-uninstaller-tab" data-toggle="tab" href="#helm-uninstaller" role="tab" aria-controls="helm-uninstaller" aria-selected="false">Helm</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link active" id="script-uninstaller-tab" data-toggle="tab" href="#script-uninstaller" role="tab" aria-controls="script-uninstaller" aria-selected="true">Script</a>
-  </li>
-</ul>
-<div class="tab-content" id="uninstallerTabContent">
- <!-- ------------ Helm Tab Begins----------- -->
-  <div class="tab-pane fade" id="helm-uninstaller" role="tabpanel" aria-labelledby="helm-uninstaller-tab">
-
-### Uninstall  `stash-elasticsearch-*` charts
-
-Run the following script to uninstall `stash-elasticsearch` catalogs that was installed as a Helm chart.
-
-```console
-curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/chart.sh | bash -s -- --uninstall --catalog=stash-elasticsearch
-```
-
-</div>
-<!-- ------------ Helm Tab Ends----------- -->
-
-<!-- ------------ Script Tab Begins----------- -->
-<div class="tab-pane fade show active" id="script-uninstaller" role="tabpanel" aria-labelledby="script-uninstaller-tab">
-
-### Uninstall `stash-elasticsearch` catalog YAMLs
-
-Run the following script to uninstall `stash-elasticsearch` catalog that was installed as Kubernetes YAMLs.
-
-```console
-curl -fsSL https://github.com/stashed/catalog/raw/master/deploy/script.sh | bash -s -- --uninstall --catalog=stash-elasticsearch
-```
-
-</div>
-<!-- ------------ Script Tab Ends----------- -->
-</div>
