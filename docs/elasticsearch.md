@@ -4,7 +4,7 @@ description: Backup and restore Elasticsearch database using Stash
 menu:
   product_stash_{{ .version }}:
     identifier: standalone-elasticsearch-{{ .subproject_version }}
-    name: Standalone Elasticsearch
+    name: Backup & Restore Elasticsearch
     parent: stash-elasticsearch-guides-{{ .subproject_version }}
     weight: 10
 product_name: stash
@@ -20,7 +20,7 @@ Stash 0.9.0+ supports backup and restoration of Elasticsearch clusters. This gui
 
 - At first, you need to have a Kubernetes cluster, and the `kubectl` command-line tool must be configured to communicate with your cluster. If you do not already have a cluster, you can create one by using Minikube.
 - Install Stash in your cluster following the steps [here](/docs/setup/install.md).
-- Install Elasticsearch addon for Stash following the steps [here](/docs/addons/elasticsearch/setup/install.md)
+- Install Elasticsearch addon for Stash following the steps [here](/docs/addons/elasticsearch/setup/install.md).
 - Install [KubeDB](https://kubedb.com) in your cluster following the steps [here](https://kubedb.com/docs/setup/install/). This step is optional. You can deploy your database using any method you want. We are using KubeDB because KubeDB simplifies many of the difficult or tedious management tasks of running a production grade databases on private and public clouds.
 - If you are not familiar with how Stash backup and restore Elasticsearch databases, please check the following guide [here](/docs/addons/elasticsearch/overview.md).
 

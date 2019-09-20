@@ -19,6 +19,7 @@ spec:
   - --max-connections=${MAX_CONNECTIONS:=0} # 0 indicates use default connection limit
   - --hostname=${HOSTNAME:=}
   - --source-hostname=${SOURCE_HOSTNAME:=}
+  - --interim-data-dir=${INTERIM_DATA_DIR}
   # target information
   - --namespace=${NAMESPACE:=default}
   - --appbinding=${TARGET_NAME:=}
@@ -28,5 +29,3 @@ spec:
   volumeMounts:
   - name: ${secretVolume}
     mountPath: /etc/repository/secret
-  - mountPath: /var/pv
-    name: data

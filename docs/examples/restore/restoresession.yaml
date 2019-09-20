@@ -15,5 +15,14 @@ spec:
       apiVersion: appcatalog.appscode.com/v1alpha1
       kind: AppBinding
       name: restored-elasticsearch
+  interimVolumeTemplate:
+    metadata:
+      name: stash-tmp-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 2Gi
   rules:
   - snapshots: [latest]

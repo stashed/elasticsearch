@@ -4,7 +4,8 @@ metadata:
   name: sample-elasticsearch-backup
   namespace: demo
 spec:
-  schedule: "*/5 * * * *"
+  schedule: "*/3 * * * *"
+  backupHistoryLimit: 3
   task:
     name: elasticsearch-backup-6.5
   repository:
@@ -14,6 +15,16 @@ spec:
       apiVersion: appcatalog.appscode.com/v1alpha1
       kind: AppBinding
       name: sample-elasticsearch
+  interimVolumeTemplate:
+    metadata:
+      name: stash-tmp-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 2Gi
   retentionPolicy:
+    name: keep-last
     keepLast: 5
     prune: true
