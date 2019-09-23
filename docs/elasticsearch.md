@@ -323,7 +323,17 @@ spec:
       apiVersion: appcatalog.appscode.com/v1alpha1
       kind: AppBinding
       name: sample-elasticsearch
+  interimVolumeTemplate:
+    metadata:
+      name: stash-tmp-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 1Gi
   retentionPolicy:
+    name: keep-last
     keepLast: 5
     prune: true
 ```
@@ -333,6 +343,7 @@ Here,
 - `spec.schedule` specifies that we want to backup the database at 5 minutes interval.
 - `spec.task.name` specifies the name of the task crd that specifies the necessary Function and their execution order to backup a Elasticsearch database.
 - `spec.target.ref` refers to the `AppBinding` crd that was created for `sample-elasticsearch` database.
+- `spec.interimVolumeTemplate` specifies a PVC template where the dumped data will be stored temporarily before uploading to the backend.
 
 Let's create the `BackupConfiguration` crd we have shown above,
 
@@ -482,7 +493,7 @@ metadata:
   name: sample-elasticsearch-restore
   namespace: demo
   labels:
-    kubedb.com/kind: Elasticsearch # this label is mandatory if you are using KubeDB to deploy the database.
+    kubedb.com/kind: Elasticsearch # this label is mandatory if you are using KubeDB to deploy the database. Otherwise, Elasticsearch crd will be stuck in `Initializing` phase.
 spec:
   task:
     name: elasticsearch-restore-6.5
@@ -493,6 +504,15 @@ spec:
       apiVersion: appcatalog.appscode.com/v1alpha1
       kind: AppBinding
       name: restored-elasticsearch
+  interimVolumeTemplate:
+    metadata:
+      name: stash-tmp-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 1Gi
   rules:
   - snapshots: [latest]
 ```
@@ -503,6 +523,7 @@ Here,
 - `spec.task.name` specifies the name of the `Task` crd that specifies the Functions and their execution order to restore a Elasticsearch database.
 - `spec.repository.name` specifies the `Repository` crd that holds the backend information where our backed up data has been stored.
 - `spec.target.ref` refers to the AppBinding crd for the `restored-elasticsearch` database.
+- `spec.interimVolumeTemplate` specifies a PVC template to store the restored data temporarily before inserting into the targeted Elasticsearch database.
 - `spec.rules` specifies that we are restoring from the latest backup snapshot of the database.
 
 > **Warning:** Label `kubedb.com/kind: Elasticsearch` is mandatory if you are using KubeDB to deploy the database. Otherwise, the database will be stuck in `Initializing` state.

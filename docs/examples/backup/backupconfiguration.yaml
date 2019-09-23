@@ -4,8 +4,7 @@ metadata:
   name: sample-elasticsearch-backup
   namespace: demo
 spec:
-  schedule: "*/3 * * * *"
-  backupHistoryLimit: 3
+  schedule: "*/5 * * * *"
   task:
     name: elasticsearch-backup-6.5
   repository:
@@ -23,7 +22,7 @@ spec:
       storageClassName: "standard"
       resources:
         requests:
-          storage: 2Gi
+          storage: 1Gi
   retentionPolicy:
     name: keep-last
     keepLast: 5
