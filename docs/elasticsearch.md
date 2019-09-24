@@ -39,11 +39,11 @@ $ kubectl create ns demo
 namespace/demo created
 ```
 
->Note: YAML files used in this tutorial are stored [here](https://github.com/stashed/elasticsearch/tree/master/docs/examples).
+>Note: YAML files used in this tutorial are stored [here](https://github.com/stashed/elasticsearch/tree/{{< param "info.subproject_version" >}}/docs/examples).
 
 ## Backup Elasticsearch
 
-This section will demonstrate how to backup Elasticsearch database. Here, we are going to deploy a Elasticsearch database using KubeDB. Then, we are going to backup this database into a GCS bucket. Finally, we are going to restore the backed up data into another Elasticsearch database.
+This section will demonstrate how to backup an Elasticsearch database. Here, we are going to deploy an Elasticsearch database using KubeDB. Then, we are going to backup this database into a GCS bucket. Finally, we are going to restore the backed up data into another Elasticsearch database.
 
 ### Deploy Sample Elasticsearch Database
 
@@ -79,7 +79,7 @@ $ kubectl apply -f https://github.com/stashed/elasticsearch/raw/{{< param "info.
 elasticsearch.kubedb.com/sample-elasticsearch created
 ```
 
-KubeDB will deploy a Elasticsearch database according to the above specification. It will also create the necessary secrets and services to access the database.
+KubeDB will deploy an Elasticsearch database according to the above specification. It will also create the necessary secrets and services to access the database.
 
 Let's check if the database is ready to use,
 
@@ -206,7 +206,7 @@ $ kubectl get secrets -n demo sample-elasticsearch-auth -o jsonpath='{.data.\ADM
 admin
 ```
 
-- **Password:** Run following command to get password
+- **Password:** Run the following command to get the password
 
 ```bash
 $ kubectl get secrets -n demo sample-elasticsearch-auth -o jsonpath='{.data.\ADMIN_PASSWORD}' | base64 -d
@@ -341,7 +341,7 @@ spec:
 Here,
 
 - `spec.schedule` specifies that we want to backup the database at 5 minutes interval.
-- `spec.task.name` specifies the name of the task crd that specifies the necessary Function and their execution order to backup a Elasticsearch database.
+- `spec.task.name` specifies the name of the task crd that specifies the necessary Function and their execution order to backup an Elasticsearch database.
 - `spec.target.ref` refers to the `AppBinding` crd that was created for `sample-elasticsearch` database.
 - `spec.interimVolumeTemplate` specifies a PVC template where the dumped data will be stored temporarily before uploading to the backend.
 
@@ -366,7 +366,7 @@ sample-elasticsearch-backup   */5 * * * *   False     0        <none>          1
 
 **Wait for BackupSession:**
 
-The `sample-elasticsearch-backup` CronJob will trigger a backup on each scheduled slot by creating a `BackpSession` crd.
+The `sample-elasticsearch-backup` CronJob will trigger a backup on each scheduled slot by creating a `BackupSession` crd.
 
 Wait for the next schedule. Run the following command to watch `BackupSession` crd,
 
@@ -520,7 +520,7 @@ spec:
 Here,
 
 - `metadata.labels` specifies a `kubedb.com/kind: Elasticsearch` label that is used by KubeDB to watch this `RestoreSession`.
-- `spec.task.name` specifies the name of the `Task` crd that specifies the Functions and their execution order to restore a Elasticsearch database.
+- `spec.task.name` specifies the name of the `Task` crd that specifies the Functions and their execution order to restore an Elasticsearch database.
 - `spec.repository.name` specifies the `Repository` crd that holds the backend information where our backed up data has been stored.
 - `spec.target.ref` refers to the AppBinding crd for the `restored-elasticsearch` database.
 - `spec.interimVolumeTemplate` specifies a PVC template to store the restored data temporarily before inserting into the targeted Elasticsearch database.
