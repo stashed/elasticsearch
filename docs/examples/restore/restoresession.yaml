@@ -4,7 +4,7 @@ metadata:
   name: sample-elasticsearch-restore
   namespace: demo
   labels:
-    kubedb.com/kind: Elasticsearch
+    kubedb.com/kind: Elasticsearch # this label is mandatory if you are using KubeDB to deploy the database. Otherwise, Elasticsearch crd will be stuck in `Initializing` phase.
 spec:
   task:
     name: elasticsearch-restore-6.5
@@ -15,5 +15,14 @@ spec:
       apiVersion: appcatalog.appscode.com/v1alpha1
       kind: AppBinding
       name: restored-elasticsearch
+  interimVolumeTemplate:
+    metadata:
+      name: stash-tmp-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 1Gi
   rules:
   - snapshots: [latest]

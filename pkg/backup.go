@@ -30,8 +30,7 @@ func NewCmdBackup() *cobra.Command {
 				EnableCache: false,
 			},
 			backupOptions: restic.BackupOptions{
-				Host:        restic.DefaultHost,
-				BackupPaths: []string{ESDataDir},
+				Host: restic.DefaultHost,
 			},
 		}
 	)
@@ -96,6 +95,7 @@ func NewCmdBackup() *cobra.Command {
 	cmd.Flags().IntVar(&opt.setupOptions.MaxConnections, "max-connections", opt.setupOptions.MaxConnections, "Specify maximum concurrent connections for GCS, Azure and B2 backend")
 
 	cmd.Flags().StringVar(&opt.backupOptions.Host, "hostname", opt.backupOptions.Host, "Name of the host machine")
+	cmd.Flags().StringVar(&opt.interimDataDir, "interim-data-dir", opt.interimDataDir, "Directory where the targeted data will be stored temporarily before uploading to the backend.")
 
 	cmd.Flags().IntVar(&opt.backupOptions.RetentionPolicy.KeepLast, "retention-keep-last", opt.backupOptions.RetentionPolicy.KeepLast, "Specify value for retention strategy")
 	cmd.Flags().IntVar(&opt.backupOptions.RetentionPolicy.KeepHourly, "retention-keep-hourly", opt.backupOptions.RetentionPolicy.KeepHourly, "Specify value for retention strategy")
@@ -136,8 +136,8 @@ func (opt *esOptions) backupElasticsearch() (*restic.BackupOutput, error) {
 	}
 
 	// clear directory before running multielasticdump
-	log.Infoln("Cleaning up directory", ESDataDir)
-	if err := clearDir(ESDataDir); err != nil {
+	log.Infoln("Cleaning up directory: ", opt.interimDataDir)
+	if err := clearDir(opt.interimDataDir); err != nil {
 		return nil, err
 	}
 
@@ -161,9 +161,9 @@ func (opt *esOptions) backupElasticsearch() (*restic.BackupOutput, error) {
 	esShell.ShowCMD = false
 	esShell.Stdout = ioutil.Discard
 	esShell.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") //xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
-	esShell.Command("multielasticdump",                 // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+	esShell.Command(MultiElasticDumpCMD,                // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
 		fmt.Sprintf(`--input=%v`, esURL),
-		fmt.Sprintf(`--output=%v`, ESDataDir),
+		fmt.Sprintf(`--output=%v`, opt.interimDataDir),
 		"--ignoreType=alias,settings,template", // ref: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
 		tlsArgs,
 		opt.esArgs,
@@ -171,6 +171,9 @@ func (opt *esOptions) backupElasticsearch() (*restic.BackupOutput, error) {
 	if err := esShell.Run(); err != nil {
 		return nil, err
 	}
+
+	// dumped data has been stored in the interim data dir. Now, we will backup this directory using Stash.
+	opt.backupOptions.BackupPaths = []string{opt.interimDataDir}
 
 	// init restic wrapper
 	resticWrapper, err := restic.NewResticWrapper(opt.setupOptions)
@@ -180,11 +183,4 @@ func (opt *esOptions) backupElasticsearch() (*restic.BackupOutput, error) {
 
 	// Run backup
 	return resticWrapper.RunBackup(opt.backupOptions)
-}
-
-func clearDir(dir string) error {
-	if err := os.RemoveAll(dir); err != nil {
-		return fmt.Errorf("unable to clean datadir: %v. Reason: %v", dir, err)
-	}
-	return os.MkdirAll(dir, os.ModePerm)
 }

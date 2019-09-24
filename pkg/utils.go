@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -12,12 +13,10 @@ import (
 )
 
 const (
-	JobESBackup  = "stash-es-backup"
-	ESUser       = "ADMIN_USERNAME"
-	ESPassword   = "ADMIN_PASSWORD"
-	ESDumpCMD    = "multielasticdump"
-	ESCACertFile = "root.pem"
-	ESDataDir    = "/var/pv/data"
+	ESUser              = "ADMIN_USERNAME"
+	ESPassword          = "ADMIN_PASSWORD"
+	MultiElasticDumpCMD = "multielasticdump"
+	ESCACertFile        = "root.pem"
 )
 
 type esOptions struct {
@@ -27,6 +26,7 @@ type esOptions struct {
 	namespace      string
 	appBindingName string
 	esArgs         string
+	interimDataDir string
 	outputDir      string
 
 	setupOptions   restic.SetupOptions
@@ -44,4 +44,10 @@ func waitForDBReady(host string, port int32) {
 		log.Infoln("Waiting... database is not ready yet")
 		time.Sleep(5 * time.Second)
 	}
+}
+func clearDir(dir string) error {
+	if err := os.RemoveAll(dir); err != nil {
+		return fmt.Errorf("unable to clean datadir: %v. Reason: %v", dir, err)
+	}
+	return os.MkdirAll(dir, os.ModePerm)
 }

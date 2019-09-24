@@ -29,8 +29,7 @@ func NewCmdRestore() *cobra.Command {
 				EnableCache: false,
 			},
 			restoreOptions: restic.RestoreOptions{
-				RestorePaths: []string{ESDataDir},
-				Host:         restic.DefaultHost,
+				Host: restic.DefaultHost,
 			},
 		}
 	)
@@ -96,6 +95,7 @@ func NewCmdRestore() *cobra.Command {
 	cmd.Flags().StringVar(&opt.restoreOptions.Host, "hostname", opt.restoreOptions.Host, "Name of the host machine")
 	cmd.Flags().StringVar(&opt.restoreOptions.SourceHost, "source-hostname", opt.restoreOptions.SourceHost, "Name of the host whose data will be restored")
 	cmd.Flags().StringSliceVar(&opt.restoreOptions.Snapshots, "snapshot", opt.restoreOptions.Snapshots, "Snapshots to restore")
+	cmd.Flags().StringVar(&opt.interimDataDir, "interim-data-dir", opt.interimDataDir, "Directory where the restored data will be stored temporarily before injecting into the desired database.")
 
 	cmd.Flags().StringVar(&opt.outputDir, "output-dir", opt.outputDir, "Directory where output.json file will be written (keep empty if you don't need to write output in file)")
 
@@ -126,8 +126,8 @@ func (opt *esOptions) restoreElasticsearch() (*restic.RestoreOutput, error) {
 	}
 
 	// clear directory before running multielasticdump
-	log.Infoln("Cleaning up directory", ESDataDir)
-	if err := clearDir(ESDataDir); err != nil {
+	log.Infoln("Cleaning up directory: ", opt.interimDataDir)
+	if err := clearDir(opt.interimDataDir); err != nil {
 		return nil, err
 	}
 
@@ -141,6 +141,9 @@ func (opt *esOptions) restoreElasticsearch() (*restic.RestoreOutput, error) {
 
 	appSVC := appBinding.Spec.ClientConfig.Service
 	esURL := fmt.Sprintf("%v://%s:%s@%s:%d", appSVC.Scheme, appBindingSecret.Data[ESUser], appBindingSecret.Data[ESPassword], appSVC.Name, appSVC.Port) // TODO: support for authplugin: none
+
+	// we will restore the desired data into interim data dir before injecting into the desired database
+	opt.restoreOptions.RestorePaths = []string{opt.interimDataDir}
 
 	// init restic wrapper
 	resticWrapper, err := restic.NewResticWrapper(opt.setupOptions)
@@ -160,9 +163,9 @@ func (opt *esOptions) restoreElasticsearch() (*restic.RestoreOutput, error) {
 	esShell.ShowCMD = false
 	esShell.Stdout = ioutil.Discard
 	esShell.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") //xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
-	esShell.Command("multielasticdump",                 // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+	esShell.Command(MultiElasticDumpCMD,                // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
 		"--direction=load",
-		fmt.Sprintf(`--input=%v`, ESDataDir),
+		fmt.Sprintf(`--input=%v`, opt.interimDataDir),
 		fmt.Sprintf(`--output=%v`, esURL),
 		tlsArgs,
 		opt.esArgs,

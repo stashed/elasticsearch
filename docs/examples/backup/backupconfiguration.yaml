@@ -14,6 +14,16 @@ spec:
       apiVersion: appcatalog.appscode.com/v1alpha1
       kind: AppBinding
       name: sample-elasticsearch
+  interimVolumeTemplate:
+    metadata:
+      name: stash-tmp-storage
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "standard"
+      resources:
+        requests:
+          storage: 1Gi
   retentionPolicy:
+    name: keep-last
     keepLast: 5
     prune: true
