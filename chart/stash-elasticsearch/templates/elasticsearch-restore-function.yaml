@@ -24,6 +24,7 @@ spec:
   - --namespace=${NAMESPACE:=default}
   - --appbinding=${TARGET_NAME:=}
   - --snapshot=${RESTORE_SNAPSHOTS:=}
+  - --es-args=${esArgs:={{ .Values.restore.esArgs }}}
   # output & metric information
   - --output-dir=${outputDir:=}
   volumeMounts:

@@ -57,10 +57,10 @@ Below is the YAML of a sample Elasticsearch crd that we are going to create for 
 apiVersion: kubedb.com/v1alpha1
 kind: Elasticsearch
 metadata:
-  name: sameple-elasticsearch
+  name: sample-elasticsearch
   namespace: demo
 spec:
-  version: "6.5"
+  version: "5.6-v1"
   storageType: Durable
   storage:
     storageClassName: "standard"
@@ -69,7 +69,7 @@ spec:
     resources:
       requests:
         storage: 1Gi
-  terminationPolicy: DoNotTerminate
+  terminationPolicy: Delete
 ```
 
 Create the above `Elasticsearch` crd,
@@ -86,7 +86,7 @@ Let's check if the database is ready to use,
 ```console
 $ kubectl get es -n demo sample-elasticsearch
 NAME                   VERSION   STATUS    AGE
-sample-elasticsearch   6.5       Running   15m
+sample-elasticsearch   5.6-v1    Running   3m35s
 ```
 
 The database is `Running`. Verify that KubeDB has created a Secret and a Service for this database using the following commands,
@@ -94,13 +94,13 @@ The database is `Running`. Verify that KubeDB has created a Secret and a Service
 ```console
 $ kubectl get secret -n demo -l=kubedb.com/name=sample-elasticsearch
 NAME                        TYPE     DATA   AGE
-sample-elasticsearch-auth   Opaque   9      15m
-sample-elasticsearch-cert   Opaque   4      15m
+sample-elasticsearch-auth   Opaque   9      5m14s
+sample-elasticsearch-cert   Opaque   4      5m14s
 
 $ kubectl get service -n demo -l=kubedb.com/name=sample-elasticsearch
-NAME                          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)    AGE
-sample-elasticsearch          ClusterIP   10.108.14.89   <none>        9200/TCP   15m
-sample-elasticsearch-master   ClusterIP   10.108.8.186   <none>        9300/TCP   15m
+NAME                          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+sample-elasticsearch          ClusterIP   10.102.109.209   <none>        9200/TCP   5m36s
+sample-elasticsearch-master   ClusterIP   10.107.148.74    <none>        9300/TCP   5m36s
 ```
 
 Here, we have to use service `sample-elasticsearch` and secret `sample-elasticsearch-auth` to connect with the database. KubeDB creates an [AppBinding](/docs/concepts/crds/appbinding.md) crd that holds the necessary information to connect with the database.
@@ -112,7 +112,7 @@ Verify that the `AppBinding` has been created successfully using the following c
 ```console
 $ kubectl get appbindings -n demo
 NAME                   AGE
-sample-elasticsearch   15m
+sample-elasticsearch   4m16s
 ```
 
 Let's check the YAML of the above `AppBinding`,
@@ -125,27 +125,16 @@ $ kubectl get appbindings -n demo sample-elasticsearch -o yaml
 apiVersion: appcatalog.appscode.com/v1alpha1
 kind: AppBinding
 metadata:
-  creationTimestamp: "2019-06-28T09:39:41Z"
-  generation: 1
   labels:
     app.kubernetes.io/component: database
     app.kubernetes.io/instance: sample-elasticsearch
     app.kubernetes.io/managed-by: kubedb.com
     app.kubernetes.io/name: elasticsearch
-    app.kubernetes.io/version: "6.5"
+    app.kubernetes.io/version: 5.6-v1
     kubedb.com/kind: Elasticsearch
     kubedb.com/name: sample-elasticsearch
   name: sample-elasticsearch
   namespace: demo
-  ownerReferences:
-  - apiVersion: kubedb.com/v1alpha1
-    blockOwnerDeletion: false
-    kind: Elasticsearch
-    name: sample-elasticsearch
-    uid: 81c28aee-9988-11e9-a5fe-42010a800226
-  resourceVersion: "249995"
-  selfLink: /apis/appcatalog.appscode.com/v1alpha1/namespaces/demo/appbindings/sample-elasticsearch
-  uid: a72d05fc-9988-11e9-a5fe-42010a800226
 spec:
   clientConfig:
     service:
@@ -162,6 +151,7 @@ spec:
       from: ADMIN_PASSWORD
       to: password
   type: kubedb.com/elasticsearch
+  version: "5.6"
 ```
 
 Stash uses the `AppBinding` crd to connect with the target database. It requires the following two fields to set in AppBinding's `Spec` section.
@@ -210,7 +200,7 @@ admin
 
 ```bash
 $ kubectl get secrets -n demo sample-elasticsearch-auth -o jsonpath='{.data.\ADMIN_PASSWORD}' | base64 -d
-kwuagqng
+mti4sbyy
 ```
 
 **Insert Sample Data:**
@@ -220,22 +210,22 @@ Now, we are going to exec into the database pod and create some sample data. At 
 ```console
 $ kubectl get pods -n demo --selector="kubedb.com/name=sample-elasticsearch"
 NAME                     READY   STATUS    RESTARTS   AGE
-sample-elasticsearch-0   1/1     Running   0          21m
+sample-elasticsearch-0   1/1     Running   0          7m33s
 ```
 
 Now, let's exec into the pod and create a table,
 
 ```console
 $ kubectl exec -it -n demo sample-elasticsearch-0 bash
-~ curl -XPUT --user "admin:kwuagqng" "localhost:9200/test/snapshot/1?pretty" -H 'Content-Type: application/json' -d'
+~ curl -XPUT --user "admin:mti4sbyy" "localhost:9200/test/snapshot/1?pretty" -H 'Content-Type: application/json' -d'
 {
     "title": "Snapshot",
-    "text":  "Testing instand backup",
+    "text":  "Testing instant backup",
     "date":  "2018/02/13"
 }
 '
 
-~ curl -XGET --user "admin:kwuagqng" "localhost:9200/test/snapshot/1?pretty"
+~ curl -XGET --user "admin:mti4sbyy" "localhost:9200/test/snapshot/1?pretty"
 {
   "_index" : "test",
   "_type" : "snapshot",
@@ -244,7 +234,7 @@ $ kubectl exec -it -n demo sample-elasticsearch-0 bash
   "found" : true,
   "_source" : {
     "title" : "Snapshot",
-    "text" : "Testing instand backup",
+    "text" : "Testing instant backup",
     "date" : "2018/02/13"
   }
 }
@@ -315,7 +305,7 @@ metadata:
 spec:
   schedule: "*/5 * * * *"
   task:
-    name: elasticsearch-backup-6.5
+    name: elasticsearch-backup-5.6
   repository:
     name: gcs-repo
   target:
@@ -333,7 +323,7 @@ spec:
         requests:
           storage: 1Gi
   retentionPolicy:
-    name: keep-last
+    name: keep-last-5
     keepLast: 5
     prune: true
 ```
@@ -372,9 +362,10 @@ Wait for the next schedule. Run the following command to watch `BackupSession` c
 
 ```console
 $ kubectl get backupsession -n demo -w
-NAME                                     BACKUPCONFIGURATION           PHASE       AGE
-sample-elasticsearch-backup-1561717803   sample-elasticsearch-backup   Running     5m19s
-sample-elasticsearch-backup-1561717803   sample-elasticsearch-backup   Succeeded   5m45s
+NAME                                     BACKUPCONFIGURATION           PHASE     AGE
+sample-elasticsearch-backup-1570098367   sample-elasticsearch-backup   Running   9s
+sample-elasticsearch-backup-1570098367   sample-elasticsearch-backup   Running   79s
+sample-elasticsearch-backup-1570098367   sample-elasticsearch-backup   Succeeded   79s
 ```
 
 We can see above that the backup session has succeeded. Now, we are going to verify that the backed up data has been stored in the backend.
@@ -386,7 +377,7 @@ Once a backup is complete, Stash will update the respective `Repository` crd to 
 ```console
 $ kubectl get repository -n demo gcs-repo
 NAME       INTEGRITY   SIZE        SNAPSHOT-COUNT   LAST-SUCCESSFUL-BACKUP   AGE
-gcs-repo   true        1.140 KiB   1                1m                       26m
+gcs-repo   true        1.030 KiB   1                39s                      3m20s
 ```
 
 Now, if we navigate to the GCS bucket, we are going to see backed up data has been stored in `demo/elasticsearch/sample-elasticsearch` directory as specified by `spec.backend.gcs.prefix` field of Repository crd.
@@ -411,9 +402,9 @@ backupconfiguration.stash.appscode.com/sample-elasticsearch-backup patched
 Now, wait for a moment. Stash will pause the BackupConfiguration. Verify that the BackupConfiguration  has been paused,
 
 ```console
-$ kubectl get backupconfiguration -n demo sample-elasticsearch-backup
-NAME                         TASK                            SCHEDULE      PAUSED   AGE
-sample-elasticsearch-backup  elasticsearch-backup-6.5        */5 * * * *   true     26m
+$  kubectl get backupconfiguration -n demo sample-elasticsearch-backup
+NAME                          TASK                       SCHEDULE      PAUSED   AGE
+sample-elasticsearch-backup   elasticsearch-backup-5.6   */5 * * * *   true     3m8s
 ```
 
 Notice the `PAUSED` column. Value `true` for this field means that the BackupConfiguration has been paused.
@@ -434,7 +425,7 @@ metadata:
   name: restored-elasticsearch
   namespace: demo
 spec:
-  version: "6.5"
+  version: "5.6-v1"
   storageType: Durable
   databaseSecret:
     secretName: sample-elasticsearch-auth # use same secret as original the database
@@ -467,7 +458,7 @@ If you check the database status, you will see it is stuck in `Initializing` sta
 ```console
 $ kubectl get es -n demo restored-elasticsearch
 NAME                     VERSION   STATUS         AGE
-restored-elasticsearch   6.5       Initializing   3m21s
+restored-elasticsearch   5.6-v1    Initializing   38s
 ```
 
 **Create RestoreSession:**
@@ -479,7 +470,7 @@ Check AppBinding has been created for the `restored-elasticsearch` database usin
 ```console
 $ kubectl get appbindings -n demo restored-elasticsearch
 NAME                     AGE
-restored-elasticsearch   9m59s
+restored-elasticsearch   29s
 ```
 
 >If you are not using KubeDB to deploy database, create the AppBinding manually.
@@ -496,7 +487,7 @@ metadata:
     kubedb.com/kind: Elasticsearch # this label is mandatory if you are using KubeDB to deploy the database. Otherwise, Elasticsearch crd will be stuck in `Initializing` phase.
 spec:
   task:
-    name: elasticsearch-restore-6.5
+    name: elasticsearch-restore-5.6
   repository:
     name: gcs-repo
   target:
@@ -557,7 +548,7 @@ At first, check if the database has gone into `Running` state by the following c
 ```console
 $ kubectl get es -n demo restored-elasticsearch
 NAME                     VERSION   STATUS    AGE
-restored-elasticsearch   6.5       Running   2m16s
+restored-elasticsearch   5.6-v1    Running   2m16s
 ```
 
 Now, find out the database pod by the following command,
@@ -573,7 +564,7 @@ Now, exec into the database pod and list available tables,
 ```console
 $ kubectl exec -it -n demo restored-elasticsearch-0 bash
 
-~ curl -XGET --user "admin:kwuagqng" "localhost:9200/test/snapshot/1?pretty"
+~ curl -XGET --user "admin:mti4sbyy" "localhost:9200/test/snapshot/1?pretty"
 {
   "_index" : "test",
   "_type" : "snapshot",
@@ -595,8 +586,8 @@ So, from the above output, we can see the document `test` that we had created in
 To cleanup the Kubernetes resources created by this tutorial, run:
 
 ```console
-kubectl delete restoresession -n demo sample-elasticsearch-restore
-kubectl delete backupconfiguration -n demo sample-elasticsearch-backup
-kubectl delete es -n demo restored-elasticsearch
-kubectl delete es -n demo sample-elasticsearch
+kubectl delete -n demo restoresession sample-elasticsearch-restore
+kubectl delete -n demo backupconfiguration sample-elasticsearch-backup
+kubectl delete -n demo es sample-elasticsearch restored-elasticsearch
+kubectl delete -n demo repository gcs-repo
 ```

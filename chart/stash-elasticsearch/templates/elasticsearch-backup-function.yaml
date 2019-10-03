@@ -22,6 +22,7 @@ spec:
   # target information
   - --namespace=${NAMESPACE:=default}
   - --appbinding=${TARGET_NAME:=}
+  - --es-args=${esArgs:={{ .Values.backup.esArgs }}}
   # cleanup information
   - --retention-keep-last=${RETENTION_KEEP_LAST:=0}
   - --retention-keep-hourly=${RETENTION_KEEP_HOURLY:=0}

@@ -76,7 +76,7 @@ func NewCmdRestore() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opt.esArgs, "elasticsearch-args", opt.esArgs, "Additional arguments")
+	cmd.Flags().StringVar(&opt.esArgs, "es-args", opt.esArgs, "Additional arguments")
 
 	cmd.Flags().StringVar(&masterURL, "master", masterURL, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
 	cmd.Flags().StringVar(&kubeconfigPath, "kubeconfig", kubeconfigPath, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")

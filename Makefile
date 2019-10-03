@@ -59,8 +59,8 @@ BIN_PLATFORMS    := $(DOCKER_PLATFORMS)
 OS   := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
 ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 
-BASEIMAGE_PROD   ?= node:8.14-alpine
-BASEIMAGE_DBG    ?= node:8.14-alpine
+BASEIMAGE_PROD   ?= node:8.16-alpine
+BASEIMAGE_DBG    ?= node:8.16-alpine
 
 IMAGE            := $(REGISTRY)/$(BIN)
 VERSION_PROD     := $(VERSION)
