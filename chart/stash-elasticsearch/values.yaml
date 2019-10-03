@@ -5,7 +5,7 @@
 docker:
   registry: stashed
   image: stash-elasticsearch
-  tag: 5.6
+  tag: 5.6.4
 
 # optional argument to send multielasticdump
 backup:

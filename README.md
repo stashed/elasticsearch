@@ -10,22 +10,22 @@ Elasticsearch backup and restore plugin for [Stash by AppsCode](https://appscode
 
 ## Install
 
-Install Elasticsearch 5.6 backup or restore plugin for Stash as below.
+Install Elasticsearch 5.6.4 backup or restore plugin for Stash as below.
 
 ```console
 helm repo add appscode https://charts.appscode.com/stable/
 helm repo update
-helm install appscode/stash-elasticsearch --name=stash-elasticsearch-5.6 --version=5.6
+helm install appscode/stash-elasticsearch --name=stash-elasticsearch-5.6.4 --version=5.6.4
 ```
 
 To install catalog for all supported Elasticsearch versions, please visit [here](https://github.com/stashed/catalog).
 
 ## Uninstall
 
-Uninstall Elasticsearch 5.6 backup or restore plugin for Stash as below.
+Uninstall Elasticsearch 5.6.4 backup or restore plugin for Stash as below.
 
 ```console
-helm delete stash-elasticsearch-5.6
+helm delete stash-elasticsearch-5.6.4
 ```
 
 ## Support

@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/instance: sample-elasticsearch
     app.kubernetes.io/managed-by: kubedb.com
     app.kubernetes.io/name: elasticsearch
-    app.kubernetes.io/version: 5.6-v1
+    app.kubernetes.io/version: 5.6.4-v1
     kubedb.com/kind: Elasticsearch
     kubedb.com/name: sample-elasticsearch
   name: sample-elasticsearch
@@ -27,4 +27,4 @@ spec:
       from: ADMIN_PASSWORD
       to: password
   type: kubedb.com/elasticsearch
-  version: "5.6"
+  version: "5.6.4"
