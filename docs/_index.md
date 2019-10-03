@@ -5,6 +5,6 @@ menu:
     identifier: stash-elasticsearch-guides-{{ .subproject_version }}
     name: {{ .subproject_version }}
     parent: stash-elasticsearch-guides
-    weight: 25
+    weight: 30
 menu_name: product_stash_{{ .version }}
 ---

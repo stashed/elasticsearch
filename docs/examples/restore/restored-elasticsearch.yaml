@@ -4,7 +4,7 @@ metadata:
   name: restored-elasticsearch
   namespace: demo
 spec:
-  version: "6.2.4-v1"
+  version: "6.3-v1"
   storageType: Durable
   databaseSecret:
     secretName: sample-elasticsearch-auth # use same secret as original the database
