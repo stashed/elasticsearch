@@ -164,7 +164,6 @@ func (opt *esOptions) backupElasticsearch() (*restic.BackupOutput, error) {
 	esShell.Command(MultiElasticDumpCMD,                // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
 		fmt.Sprintf(`--input=%v`, esURL),
 		fmt.Sprintf(`--output=%v`, opt.interimDataDir),
-		"--ignoreType=alias,settings,template", // ref: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
 		tlsArgs,
 		opt.esArgs,
 	)
