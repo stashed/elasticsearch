@@ -60,7 +60,7 @@ metadata:
   name: sample-elasticsearch
   namespace: demo
 spec:
-  version: "7.2.0"
+  version: "7.3"
   storageType: Durable
   storage:
     storageClassName: "standard"
@@ -85,8 +85,8 @@ Let's check if the database is ready to use,
 
 ```console
 $ kubectl get es -n demo sample-elasticsearch
-NAME                   VERSION         STATUS    AGE
-sample-elasticsearch   7.2.0           Running   3m35s
+NAME                   VERSION       STATUS    AGE
+sample-elasticsearch   7.3           Running   3m35s
 ```
 
 The database is `Running`. Verify that KubeDB has created a Secret and a Service for this database using the following commands,
@@ -130,7 +130,7 @@ metadata:
     app.kubernetes.io/instance: sample-elasticsearch
     app.kubernetes.io/managed-by: kubedb.com
     app.kubernetes.io/name: elasticsearch
-    app.kubernetes.io/version: 7.2.0
+    app.kubernetes.io/version: 7.3
     kubedb.com/kind: Elasticsearch
     kubedb.com/name: sample-elasticsearch
   name: sample-elasticsearch
@@ -151,7 +151,7 @@ spec:
       from: ADMIN_PASSWORD
       to: password
   type: kubedb.com/elasticsearch
-  version: "7.2.0"
+  version: "7.3.2"
 ```
 
 Stash uses the `AppBinding` crd to connect with the target database. It requires the following two fields to set in AppBinding's `Spec` section.
@@ -305,7 +305,7 @@ metadata:
 spec:
   schedule: "*/5 * * * *"
   task:
-    name: elasticsearch-backup-7.2.0
+    name: elasticsearch-backup-7.3
   repository:
     name: gcs-repo
   target:
@@ -403,8 +403,8 @@ Now, wait for a moment. Stash will pause the BackupConfiguration. Verify that th
 
 ```console
 $  kubectl get backupconfiguration -n demo sample-elasticsearch-backup
-NAME                          TASK                           SCHEDULE      PAUSED   AGE
-sample-elasticsearch-backup   elasticsearch-backup-7.2.0     */5 * * * *   true     3m8s
+NAME                          TASK                         SCHEDULE      PAUSED   AGE
+sample-elasticsearch-backup   elasticsearch-backup-7.3     */5 * * * *   true     3m8s
 ```
 
 Notice the `PAUSED` column. Value `true` for this field means that the BackupConfiguration has been paused.
@@ -425,7 +425,7 @@ metadata:
   name: restored-elasticsearch
   namespace: demo
 spec:
-  version: "7.2.0"
+  version: "7.3"
   storageType: Durable
   databaseSecret:
     secretName: sample-elasticsearch-auth # use same secret as original the database
@@ -457,8 +457,8 @@ If you check the database status, you will see it is stuck in `Initializing` sta
 
 ```console
 $ kubectl get es -n demo restored-elasticsearch
-NAME                     VERSION       STATUS         AGE
-restored-elasticsearch   7.2.0         Initializing   38s
+NAME                     VERSION     STATUS         AGE
+restored-elasticsearch   7.3         Initializing   38s
 ```
 
 **Create RestoreSession:**
@@ -487,7 +487,7 @@ metadata:
     kubedb.com/kind: Elasticsearch # this label is mandatory if you are using KubeDB to deploy the database. Otherwise, Elasticsearch crd will be stuck in `Initializing` phase.
 spec:
   task:
-    name: elasticsearch-restore-7.2.0
+    name: elasticsearch-restore-7.3
   repository:
     name: gcs-repo
   target:
@@ -547,8 +547,8 @@ At first, check if the database has gone into `Running` state by the following c
 
 ```console
 $ kubectl get es -n demo restored-elasticsearch
-NAME                     VERSION       STATUS    AGE
-restored-elasticsearch   7.2.0         Running   2m16s
+NAME                     VERSION     STATUS    AGE
+restored-elasticsearch   7.3         Running   2m16s
 ```
 
 Now, find out the database pod by the following command,
@@ -564,17 +564,35 @@ Now, exec into the database pod and list available tables,
 ```console
 $ kubectl exec -it -n demo restored-elasticsearch-0 bash
 
-~ curl -XGET --user "elastic:5qvvfwnj" "localhost:9200/test/snapshot/1?pretty"
+~ curl -XGET --user "elastic:5qvvfwnj" "localhost:9200/test/_search?pretty"
 {
-  "_index" : "test",
-  "_type" : "snapshot",
-  "_id" : "1",
-  "_version" : 1,
-  "found" : true,
-  "_source" : {
-    "title" : "Snapshot",
-    "text" : "Testing instand backup",
-    "date" : "2018/02/13"
+  "took" : 1,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 1,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "test",
+        "_type" : "_doc",
+        "_id" : "1",
+        "_score" : 1.0,
+        "_source" : {
+          "title" : "Snapshot",
+          "text" : "Testing instant backup",
+          "date" : "2018/02/13"
+        }
+      }
+    ]
   }
 }
 ```
