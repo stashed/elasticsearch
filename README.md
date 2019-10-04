@@ -10,22 +10,22 @@ Elasticsearch backup and restore plugin for [Stash by AppsCode](https://appscode
 
 ## Install
 
-Install Elasticsearch 7.3 backup or restore plugin for Stash as below.
+Install Elasticsearch 7.3.2 backup or restore plugin for Stash as below.
 
 ```console
 helm repo add appscode https://charts.appscode.com/stable/
 helm repo update
-helm install appscode/stash-elasticsearch --name=stash-elasticsearch-7.3 --version=7.3
+helm install appscode/stash-elasticsearch --name=stash-elasticsearch-7.3.2 --version=7.3.2
 ```
 
 To install catalog for all supported Elasticsearch versions, please visit [here](https://github.com/stashed/catalog).
 
 ## Uninstall
 
-Uninstall Elasticsearch 7.3 backup or restore plugin for Stash as below.
+Uninstall Elasticsearch 7.3.2 backup or restore plugin for Stash as below.
 
 ```console
-helm delete stash-elasticsearch-7.3
+helm delete stash-elasticsearch-7.3.2
 ```
 
 ## Support
