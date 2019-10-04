@@ -4,7 +4,7 @@ metadata:
   name: sample-elasticsearch
   namespace: demo
 spec:
-  version: "6.8.0"
+  version: "7.2"
   storageType: Durable
   storage:
     storageClassName: "standard"

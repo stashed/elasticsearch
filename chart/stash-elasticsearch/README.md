@@ -7,12 +7,12 @@
 ```console
 helm repo add appscode https://charts.appscode.com/stable/
 helm repo update
-helm install appscode/stash-elasticsearch --name=stash-elasticsearch-6.8.0 --version=6.8.0
+helm install appscode/stash-elasticsearch --name=stash-elasticsearch-7.2 --version=7.2
 ```
 
 ## Introduction
 
-This chart installs necessary `Function` and `Task` definition to backup or restore Elasticsearch database 6.8.0 using Stash.
+This chart installs necessary `Function` and `Task` definition to backup or restore Elasticsearch database 7.2 using Stash.
 
 ## Prerequisites
 
@@ -32,20 +32,20 @@ helm repo add appscode https://charts.appscode.com/stable/
 helm repo update
 ```
 
-- Install the chart with the release name `stash-elasticsearch-6.8.0` run the following command,
+- Install the chart with the release name `stash-elasticsearch-7.2` run the following command,
 
 ```console
-helm install appscode/stash-elasticsearch --name=stash-elasticsearch-6.8.0 --version=6.8.0
+helm install appscode/stash-elasticsearch --name=stash-elasticsearch-7.2 --version=7.2
 ```
 
-The above commands installs `Functions` and `Task` crds that are necessary to backup Elasticsearch database 6.8.0 using Stash.
+The above commands installs `Functions` and `Task` crds that are necessary to backup Elasticsearch database 7.2 using Stash.
 
 ## Uninstalling the Chart
 
-To uninstall/delete the `stash-elasticsearch-6.8.0` run the following command,
+To uninstall/delete the `stash-elasticsearch-7.2` run the following command,
 
 ```console
-helm delete stash-elasticsearch-6.8.0
+helm delete stash-elasticsearch-7.2
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
@@ -58,7 +58,7 @@ The following table lists the configurable parameters of the `stash-elasticsearc
 | ----------------- | :---------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
 | `docker.registry` | Docker registry used to pull respective images                                                                                      | `stashed`             |
 | `docker.image`    | Docker image used to backup/restore PosegreSQL database                                                                             | `stash-elasticsearch` |
-| `docker.tag`      | Tag of the image that is used to backup/restore Elasticsearch database. This is usually same as the database version it can backup. | `6.8.0`               |
+| `docker.tag`      | Tag of the image that is used to backup/restore Elasticsearch database. This is usually same as the database version it can backup. | `7.2`                 |
 | `backup.esArgs`   | Optional arguments to pass to `multielasticdump` command  during backup process                                                     |                       |
 | `restore.esArgs`  | Optional arguments to pass to `multielasticdump` command during restore process                                                     |                       |
 
@@ -67,5 +67,5 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 For example:
 
 ```console
-helm install --name stash-elasticsearch-6.8.0 --set docker.registry=my-registry appscode/stash-elasticsearch
+helm install --name stash-elasticsearch-7.2 --set docker.registry=my-registry appscode/stash-elasticsearch
 ```
