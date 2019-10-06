@@ -52,7 +52,7 @@ NEW_RESTIC_VER   := 0.9.5
 
 SRC_DIRS := cmd pkg # directories which hold app source (not vendored)
 
-DOCKER_PLATFORMS := linux/amd64 linux/arm linux/arm64
+DOCKER_PLATFORMS := linux/amd64
 BIN_PLATFORMS    := $(DOCKER_PLATFORMS)
 
 # Used internally.  Users should pass GOOS and/or GOARCH.
@@ -69,7 +69,7 @@ TAG              := $(VERSION)_$(OS)_$(ARCH)
 TAG_PROD         := $(TAG)
 TAG_DBG          := $(VERSION)-dbg_$(OS)_$(ARCH)
 
-GO_VERSION       ?= 1.12.7
+GO_VERSION       ?= 1.12.10
 BUILD_IMAGE      ?= appscode/golang-dev:$(GO_VERSION)-stretch
 
 OUTBIN = bin/$(OS)_$(ARCH)/$(BIN)
@@ -118,12 +118,12 @@ all-container: $(addprefix container-, $(subst /,_, $(DOCKER_PLATFORMS)))
 all-push: $(addprefix push-, $(subst /,_, $(DOCKER_PLATFORMS)))
 
 version:
-	@echo version=$(VERSION)
-	@echo version_strategy=$(version_strategy)
-	@echo git_tag=$(git_tag)
-	@echo git_branch=$(git_branch)
-	@echo commit_hash=$(commit_hash)
-	@echo commit_timestamp=$(commit_timestamp)
+	@echo ::set-output name=version::$(VERSION)
+	@echo ::set-output name=version_strategy::$(version_strategy)
+	@echo ::set-output name=git_tag::$(git_tag)
+	@echo ::set-output name=git_branch::$(git_branch)
+	@echo ::set-output name=commit_hash::$(commit_hash)
+	@echo ::set-output name=commit_timestamp::$(commit_timestamp)
 
 gen:
 	@true
