@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/appscode/go/flags"
@@ -161,12 +162,18 @@ func (opt *esOptions) backupElasticsearch() (*restic.BackupOutput, error) {
 	esShell.ShowCMD = false
 	esShell.Stdout = ioutil.Discard
 	esShell.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") //xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
-	esShell.Command(MultiElasticDumpCMD,                // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+
+	args := []interface{}{
 		fmt.Sprintf(`--input=%v`, esURL),
 		fmt.Sprintf(`--output=%v`, opt.interimDataDir),
 		tlsArgs,
-		opt.esArgs,
-	)
+	}
+	for _, arg := range strings.Fields(opt.esArgs) {
+		args = append(args, arg)
+	}
+
+	esShell.Command(MultiElasticDumpCMD, args...) // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+
 	if err := esShell.Run(); err != nil {
 		return nil, err
 	}
