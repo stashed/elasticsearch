@@ -8,6 +8,10 @@ import (
 	"strings"
 	"time"
 
+	api_v1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
+	"stash.appscode.dev/stash/pkg/restic"
+	"stash.appscode.dev/stash/pkg/util"
+
 	"github.com/appscode/go/flags"
 	"github.com/appscode/go/log"
 	"github.com/codeskyblue/go-sh"
@@ -16,9 +20,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	appcatalog_cs "kmodules.xyz/custom-resources/client/clientset/versioned"
-	api_v1beta1 "stash.appscode.dev/stash/apis/stash/v1beta1"
-	"stash.appscode.dev/stash/pkg/restic"
-	"stash.appscode.dev/stash/pkg/util"
 )
 
 func NewCmdBackup() *cobra.Command {
