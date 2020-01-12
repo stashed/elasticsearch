@@ -7,7 +7,7 @@
 ```console
 helm repo add appscode https://charts.appscode.com/stable/
 helm repo update
-helm install appscode/stash-elasticsearch --name=stash-elasticsearch-7.2.0 --version=7.2.0
+helm install stash-elasticsearch-7.2.0 appscode/stash-elasticsearch -n kube-system --version=7.2.0
 ```
 
 ## Introduction
@@ -35,7 +35,7 @@ helm repo update
 - Install the chart with the release name `stash-elasticsearch-7.2.0` run the following command,
 
 ```console
-helm install appscode/stash-elasticsearch --name=stash-elasticsearch-7.2.0 --version=7.2.0
+helm install stash-elasticsearch-7.2.0 appscode/stash-elasticsearch -n kube-system --version=7.2.0
 ```
 
 The above commands installs `Functions` and `Task` crds that are necessary to backup Elasticsearch database 7.2.0 using Stash.
@@ -45,7 +45,7 @@ The above commands installs `Functions` and `Task` crds that are necessary to ba
 To uninstall/delete the `stash-elasticsearch-7.2.0` run the following command,
 
 ```console
-helm delete stash-elasticsearch-7.2.0
+helm uninstall stash-elasticsearch-7.2.0 -n kube-system
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
@@ -67,5 +67,5 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 For example:
 
 ```console
-helm install --name stash-elasticsearch-7.2.0 --set docker.registry=my-registry appscode/stash-elasticsearch
+helm install stash-elasticsearch-7.2.0 appscode/stash-elasticsearch -n kube-system --set docker.registry=my-registry
 ```
