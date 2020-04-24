@@ -2,13 +2,16 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-docker:
+nameOverride: ""
+fullnameOverride: ""
+
+image:
   registry: stashed
-  image: stash-elasticsearch
-  tag: 7.3.2
+  repository: stash-elasticsearch
+  tag: "7.3.2"
 
 # optional argument to send multielasticdump
 backup:
-  esArgs: ""
+  args: ""
 restore:
-  esArgs: ""
+  args: ""
