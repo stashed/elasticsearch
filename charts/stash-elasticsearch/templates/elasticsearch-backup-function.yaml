@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "stash-elasticsearch.labels" . | nindent 4 }}
 spec:
-  image: {{ .Values.docker.registry }}/{{ .Values.docker.image }}:{{- .Values.docker.tag }}
+  image: {{ .Values.image.registry }}/{{ .Values.image.repository }}:{{- .Values.image.tag }}
   args:
   - backup-es
   # setup information
@@ -23,7 +23,7 @@ spec:
   # target information
   - --namespace=${NAMESPACE:=default}
   - --appbinding=${TARGET_NAME:=}
-  - --es-args=${esArgs:={{ .Values.backup.esArgs }}}
+  - --es-args=${args:={{ .Values.backup.args }}}
   # cleanup information
   - --retention-keep-last=${RETENTION_KEEP_LAST:=0}
   - --retention-keep-hourly=${RETENTION_KEEP_HOURLY:=0}
