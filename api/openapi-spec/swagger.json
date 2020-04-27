@@ -868,9 +868,6 @@
   "definitions": {
     "dev.appscode.stash.elasticsearch.apis.installer.v1alpha1.ElasticsearchBackup": {
       "type": "object",
-      "required": [
-        "args"
-      ],
       "properties": {
         "args": {
           "type": "string"
@@ -879,9 +876,6 @@
     },
     "dev.appscode.stash.elasticsearch.apis.installer.v1alpha1.ElasticsearchRestore": {
       "type": "object",
-      "required": [
-        "args"
-      ],
       "properties": {
         "args": {
           "type": "string"
