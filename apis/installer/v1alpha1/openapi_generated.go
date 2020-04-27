@@ -15479,7 +15479,6 @@ func schema_elasticsearch_apis_installer_v1alpha1_ElasticsearchBackup(ref common
 						},
 					},
 				},
-				Required: []string{"args"},
 			},
 		},
 	}
@@ -15498,7 +15497,6 @@ func schema_elasticsearch_apis_installer_v1alpha1_ElasticsearchRestore(ref commo
 						},
 					},
 				},
-				Required: []string{"args"},
 			},
 		},
 	}
