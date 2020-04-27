@@ -29,10 +29,12 @@ import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
 option go_package = "v1alpha1";
 
 message ElasticsearchBackup {
+  // +optional
   optional string args = 1;
 }
 
 message ElasticsearchRestore {
+  // +optional
   optional string args = 1;
 }
 
