@@ -59,10 +59,12 @@ type ImageRef struct {
 }
 
 type ElasticsearchBackup struct {
+	//+optional
 	Args string `json:"args" protobuf:"bytes,1,opt,name=args"`
 }
 
 type ElasticsearchRestore struct {
+	//+optional
 	Args string `json:"args" protobuf:"bytes,1,opt,name=args"`
 }
 
