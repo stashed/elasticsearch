@@ -1,18 +1,18 @@
-# stash-elasticserach
+# stash-elasticsearch
 
-[stash-elasticsearch](https://github.com/stashed/stash-elasticsearch) - Elasticsearch database backup/restore plugin for [Stash by AppsCode](https://appscode.com/products/stash/).
+[stash-elasticsearch](https://github.com/stashed/elasticsearch) - Elasticsearch database backup/restore plugin for [Stash by AppsCode](https://stash.run)
 
 ## TL;DR;
 
 ```console
-helm repo add appscode https://charts.appscode.com/stable/
-helm repo update
-helm install stash-elasticsearch-6.4.0 appscode/stash-elasticsearch -n kube-system --version=6.4.0
+$ helm repo add appscode https://charts.appscode.com/stable/
+$ helm repo update
+$ helm install stash-elasticsearch-6.4.0 appscode/stash-elasticsearch -n kube-system --version=6.4.0
 ```
 
 ## Introduction
 
-This chart installs necessary `Function` and `Task` definition to backup or restore Elasticsearch database 6.4.0 using Stash.
+This chart deploys necessary `Function` and `Task` definition to backup or restore Elasticsearch database 6.4.0 using Stash on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
 ## Prerequisites
 
@@ -20,32 +20,22 @@ This chart installs necessary `Function` and `Task` definition to backup or rest
 
 ## Installing the Chart
 
-- Add AppsCode chart repository to your helm repository list.
+To install the chart with the release name `stash-elasticsearch-6.4.0`:
 
 ```console
-helm repo add appscode https://charts.appscode.com/stable/
+$ helm install stash-elasticsearch-6.4.0 appscode/stash-elasticsearch -n kube-system --version=6.4.0
 ```
 
-- Update helm repositories to fetch latest charts from the remove repository.
+The command deploys necessary `Function` and `Task` definition to backup or restore Elasticsearch database 6.4.0 using Stash on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
-```console
-helm repo update
-```
-
-- Install the chart with the release name `stash-elasticsearch-6.4.0` run the following command,
-
-```console
-helm install stash-elasticsearch-6.4.0 appscode/stash-elasticsearch -n kube-system --version=6.4.0
-```
-
-The above commands installs `Functions` and `Task` crds that are necessary to backup Elasticsearch database 6.4.0 using Stash.
+> **Tip**: List all releases using `helm list`
 
 ## Uninstalling the Chart
 
-To uninstall/delete the `stash-elasticsearch-6.4.0` run the following command,
+To uninstall/delete the `stash-elasticsearch-6.4.0`:
 
 ```console
-helm uninstall stash-elasticsearch-6.4.0 -n kube-system
+$ helm delete stash-elasticsearch-6.4.0 -n kube-system
 ```
 
 The command removes all the Kubernetes components associated with the chart and deletes the release.
@@ -54,18 +44,26 @@ The command removes all the Kubernetes components associated with the chart and 
 
 The following table lists the configurable parameters of the `stash-elasticsearch` chart and their default values.
 
-| Parameter          | Description                                                                                                                         | Default               |
-| ------------------ | :---------------------------------------------------------------------------------------------------------------------------------- | --------------------- |
-| `image.registry`   | Docker registry used to pull respective images                                                                                      | `stashed`             |
-| `image.repository` | Docker image used to backup/restore PosegreSQL database                                                                             | `stash-elasticsearch` |
-| `image.tag`        | Tag of the image that is used to backup/restore Elasticsearch database. This is usually same as the database version it can backup. | `6.4.0`               |
-| `backup.args`      | Optional arguments to pass to `multielasticdump` command  during backup process                                                     |                       |
-| `restore.args`     | Optional arguments to pass to `multielasticdump` command during restore process                                                     |                       |
+|    Parameter     |                                                             Description                                                             |        Default        |
+|------------------|-------------------------------------------------------------------------------------------------------------------------------------|-----------------------|
+| nameOverride     | Overrides name template                                                                                                             | `""`                  |
+| fullnameOverride | Overrides fullname template                                                                                                         | `""`                  |
+| image.registry   | Docker registry used to pull Elasticsearch addon image                                                                              | `stashed`             |
+| image.repository | Docker image used to backup/restore Elasticsearch database                                                                          | `stash-elasticsearch` |
+| image.tag        | Tag of the image that is used to backup/restore Elasticsearch database. This is usually same as the database version it can backup. | `"6.4.0"`             |
+| backup.args      | Arguments to pass to `multielasticdump` command  during backup process                                                              | `""`                  |
+| restore.args     | Arguments to pass to `multielasticdump` command during restore process                                                              | `""`                  |
 
-Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`.
 
-For example:
+Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example:
 
 ```console
-helm install stash-elasticsearch-6.4.0 appscode/stash-elasticsearch -n kube-system --set docker.registry=my-registry
+$ helm install stash-elasticsearch-6.4.0 appscode/stash-elasticsearch -n kube-system --version=6.4.0 --set image.registry=stashed
+```
+
+Alternatively, a YAML file that specifies the values for the parameters can be provided while
+installing the chart. For example:
+
+```console
+$ helm install stash-elasticsearch-6.4.0 appscode/stash-elasticsearch -n kube-system --version=6.4.0 --values values.yaml
 ```
