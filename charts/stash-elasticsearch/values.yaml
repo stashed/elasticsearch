@@ -2,16 +2,24 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# Overrides name template
 nameOverride: ""
+# Overrides fullname template
 fullnameOverride: ""
 
 image:
+  # Docker registry used to pull Elasticsearch addon image
   registry: stashed
+  # Docker image used to backup/restore Elasticsearch database
   repository: stash-elasticsearch
+  # Tag of the image that is used to backup/restore Elasticsearch database.
+  # This is usually same as the database version it can backup.
   tag: "6.2.4"
 
 # optional argument to send multielasticdump
 backup:
+  # Arguments to pass to `multielasticdump` command  during backup process
   args: ""
 restore:
+  # Arguments to pass to `multielasticdump` command during restore process
   args: ""
