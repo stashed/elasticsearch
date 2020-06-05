@@ -15709,8 +15709,14 @@ func schema_elasticsearch_apis_installer_v1alpha1_StashElasticsearchSpec(ref com
 							Ref: ref("stash.appscode.dev/elasticsearch/apis/installer/v1alpha1.ElasticsearchRestore"),
 						},
 					},
+					"waitTimeout": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"integer"},
+							Format: "int64",
+						},
+					},
 				},
-				Required: []string{"image", "backup", "restore"},
+				Required: []string{"image", "backup", "restore", "waitTimeout"},
 			},
 		},
 		Dependencies: []string{
