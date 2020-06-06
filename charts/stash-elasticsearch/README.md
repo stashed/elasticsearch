@@ -53,6 +53,7 @@ The following table lists the configurable parameters of the `stash-elasticsearc
 | image.tag        | Tag of the image that is used to backup/restore Elasticsearch database. This is usually same as the database version it can backup. | `"6.8.0"`             |
 | backup.args      | Arguments to pass to `multielasticdump` command  during backup process                                                              | `""`                  |
 | restore.args     | Arguments to pass to `multielasticdump` command during restore process                                                              | `""`                  |
+| waitTimeout      | Number of seconds to wait for the database to be ready before backup/restore process.                                               | `300`                 |
 
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example:
