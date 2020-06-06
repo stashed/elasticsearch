@@ -43,6 +43,7 @@ func NewCmdRestore() *cobra.Command {
 		masterURL      string
 		kubeconfigPath string
 		opt            = esOptions{
+			waitTimeout: 300,
 			setupOptions: restic.SetupOptions{
 				ScratchDir:  restic.DefaultScratchDir,
 				EnableCache: false,
@@ -96,6 +97,7 @@ func NewCmdRestore() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&opt.esArgs, "es-args", opt.esArgs, "Additional arguments")
+	cmd.Flags().Int32Var(&opt.waitTimeout, "wait-timeout", opt.waitTimeout, "Number of seconds to wait for the database to be ready")
 
 	cmd.Flags().StringVar(&masterURL, "master", masterURL, "The address of the Kubernetes API server (overrides any value in kubeconfig)")
 	cmd.Flags().StringVar(&kubeconfigPath, "kubeconfig", kubeconfigPath, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
@@ -161,6 +163,9 @@ func (opt *esOptions) restoreElasticsearch() (*restic.RestoreOutput, error) {
 
 	appSVC := appBinding.Spec.ClientConfig.Service
 	esURL := fmt.Sprintf("%v://%s:%s@%s:%d", appSVC.Scheme, appBindingSecret.Data[ESUser], appBindingSecret.Data[ESPassword], appSVC.Name, appSVC.Port) // TODO: support for authplugin: none
+
+	// wait for DB ready
+	waitForDBReady(appBinding.Spec.ClientConfig.Service.Name, appBinding.Spec.ClientConfig.Service.Port, opt.waitTimeout)
 
 	// we will restore the desired data into interim data dir before injecting into the desired database
 	opt.restoreOptions.RestorePaths = []string{opt.interimDataDir}
