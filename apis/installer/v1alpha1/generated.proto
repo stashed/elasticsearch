@@ -75,5 +75,7 @@ message StashElasticsearchSpec {
   optional ElasticsearchBackup backup = 4;
 
   optional ElasticsearchRestore restore = 5;
+
+  optional int64 waitTimeout = 6;
 }
 

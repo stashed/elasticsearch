@@ -18,6 +18,7 @@ spec:
   - --scratch-dir=/tmp
   - --enable-cache=${ENABLE_CACHE:=true}
   - --max-connections=${MAX_CONNECTIONS:=0} # 0 indicates use default connection limit
+  - --wait-timeout=${waitTimeout:={{ .Values.waitTimeout}}}
   - --hostname=${HOSTNAME:=}
   - --source-hostname=${SOURCE_HOSTNAME:=}
   - --interim-data-dir=${INTERIM_DATA_DIR}

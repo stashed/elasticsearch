@@ -45,15 +45,16 @@ type esOptions struct {
 	esArgs         string
 	interimDataDir string
 	outputDir      string
+	waitTimeout    int32
 
 	setupOptions   restic.SetupOptions
 	backupOptions  restic.BackupOptions
 	restoreOptions restic.RestoreOptions
 }
 
-func waitForDBReady(host string, port int32) {
+func waitForDBReady(host string, port, waitTimeout int32) {
 	log.Infoln("Checking database connection")
-	cmd := fmt.Sprintf(`nc "%s" "%d" -w 30`, host, port)
+	cmd := fmt.Sprintf(`nc "%s" "%d" -w %d`, host, port, waitTimeout)
 	for {
 		if err := exec.Command(cmd).Run(); err != nil {
 			break
