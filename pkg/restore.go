@@ -147,6 +147,12 @@ func (opt *esOptions) restoreElasticsearch() (*restic.RestoreOutput, error) {
 		return nil, err
 	}
 
+	// transform secret
+	err = appBinding.TransformSecret(opt.kubeClient, appBindingSecret.Data)
+	if err != nil {
+		return nil, err
+	}
+
 	// clear directory before running multielasticdump
 	log.Infoln("Cleaning up directory: ", opt.interimDataDir)
 	if err := clearDir(opt.interimDataDir); err != nil {
