@@ -36,7 +36,8 @@ FROM {ARG_FROM}
 RUN set -x \
   && apk add --update --no-cache bash ca-certificates curl
 
-RUN npm install elasticdump@4.1.2 -g
+RUN npm config set unsafe-perm true \
+  && npm install elasticdump@4.1.2 -g
 
 COPY --from=0 restic_{NEW_RESTIC_VER} /bin/restic_{NEW_RESTIC_VER}
 COPY bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
