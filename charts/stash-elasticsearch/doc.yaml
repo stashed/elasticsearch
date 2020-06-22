@@ -3,13 +3,14 @@ project:
   shortName: stash-elasticsearch
   url: https://github.com/stashed/elasticsearch
   description: "Elasticsearch database backup/restore plugin for [Stash by AppsCode](https://stash.run)"
-  app: "necessary `Function` and `Task` definition to backup or restore Elasticsearch database 5.6.4 using Stash"
+  app: "necessary `Function` and `Task` definition to backup or restore Elasticsearch
+    5.6.4 using Stash"
 repository:
   url: https://charts.appscode.com/stable/
   name: appscode
 chart:
   name: stash-elasticsearch
-  version: "5.6.4"
+  version: 5.6.4
   values: "-- generate from values file --"
   valuesExample: "-- generate from values file --"
 prerequisites:
