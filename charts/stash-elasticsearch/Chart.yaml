@@ -1,12 +1,12 @@
 apiVersion: v1
-description: 'stash-elasticsearch - Elasticsearch database backup and restore plugin for Stash by AppsCode'
+description: 'stash-elasticsearch - Elasticsearch database plugin for Stash by AppsCode'
 name: stash-elasticsearch
-version: "6.2.4"
-appVersion: "6.2.4"
+version: 6.2.4
+appVersion: 6.2.4
 home: https://github.com/stashed/elasticsearch
 icon: https://cdn.appscode.com/images/icon/stash.png
 sources:
-  - https://github.com/stashed/elasticsearch
+- https://github.com/stashed/elasticsearch
 maintainers:
-  - name: appscode
-    email: support@appscode.com
+- name: appscode
+  email: support@appscode.com
