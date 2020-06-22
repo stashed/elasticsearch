@@ -12,7 +12,7 @@ $ helm install stash-elasticsearch-6.4.0 appscode/stash-elasticsearch -n kube-sy
 
 ## Introduction
 
-This chart deploys necessary `Function` and `Task` definition to backup or restore Elasticsearch database 6.4.0 using Stash on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
+This chart deploys necessary `Function` and `Task` definition to backup or restore Elasticsearch 6.4.0 using Stash on a [Kubernetes](http://kubernetes.io) cluster using the [Helm](https://helm.sh) package manager.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ To install the chart with the release name `stash-elasticsearch-6.4.0`:
 $ helm install stash-elasticsearch-6.4.0 appscode/stash-elasticsearch -n kube-system --version=6.4.0
 ```
 
-The command deploys necessary `Function` and `Task` definition to backup or restore Elasticsearch database 6.4.0 using Stash on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
+The command deploys necessary `Function` and `Task` definition to backup or restore Elasticsearch 6.4.0 using Stash on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
 > **Tip**: List all releases using `helm list`
 
