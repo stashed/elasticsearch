@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"time"
 
+	stash "stash.appscode.dev/apimachinery/client/clientset/versioned"
 	"stash.appscode.dev/apimachinery/pkg/restic"
 
 	"github.com/appscode/go/log"
@@ -38,14 +39,16 @@ const (
 
 type esOptions struct {
 	kubeClient    kubernetes.Interface
+	stashClient   stash.Interface
 	catalogClient appcatalog_cs.Interface
 
-	namespace      string
-	appBindingName string
-	esArgs         string
-	interimDataDir string
-	outputDir      string
-	waitTimeout    int32
+	namespace         string
+	backupSessionName string
+	appBindingName    string
+	esArgs            string
+	interimDataDir    string
+	outputDir         string
+	waitTimeout       int32
 
 	setupOptions   restic.SetupOptions
 	backupOptions  restic.BackupOptions
