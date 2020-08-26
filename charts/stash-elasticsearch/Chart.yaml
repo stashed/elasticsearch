@@ -1,8 +1,8 @@
 apiVersion: v1
 description: 'stash-elasticsearch - Elasticsearch database plugin for Stash by AppsCode'
 name: stash-elasticsearch
-version: v2020.07.09-beta.0
-appVersion: v2020.07.09-beta.0
+version: 6.5.3-beta.20200826
+appVersion: 6.5.3-beta.20200826
 home: https://stash.run
 icon: https://cdn.appscode.com/images/products/stash/addons/elasticsearch-stash-addon.png
 sources:
