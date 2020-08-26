@@ -6,7 +6,6 @@
 nameOverride: ""
 # Overrides fullname template
 fullnameOverride: ""
-
 image:
   # Docker registry used to pull Elasticsearch addon image
   registry: stashed
@@ -14,8 +13,7 @@ image:
   repository: stash-elasticsearch
   # Tag of the image that is used to backup/restore Elasticsearch database.
   # This is usually same as the database version it can backup.
-  tag: "7.3.2"
-
+  tag: v2020.08.26-rc.0
 # optional argument to send multielasticdump
 backup:
   # Arguments to pass to `multielasticdump` command  during backup process
@@ -23,6 +21,5 @@ backup:
 restore:
   # Arguments to pass to `multielasticdump` command during restore process
   args: ""
-
 # Number of seconds to wait for the database to be ready before backup/restore process.
 waitTimeout: 300
