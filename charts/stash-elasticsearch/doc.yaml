@@ -10,11 +10,11 @@ repository:
   name: appscode
 chart:
   name: stash-elasticsearch
-  version: 6.4.0-rc.20200827
+  version: 6.4.0-v1
   values: "-- generate from values file --"
   valuesExample: "-- generate from values file --"
 prerequisites:
 - Kubernetes 1.11+
 release:
-  name: stash-elasticsearch-6.4.0-rc.20200827
+  name: stash-elasticsearch-6.4.0-v1
   namespace: kube-system
