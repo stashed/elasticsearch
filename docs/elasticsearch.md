@@ -12,6 +12,8 @@ menu_name: docs_{{ .version }}
 section_menu_id: stash-addons
 ---
 
+{{< notice type="warning" message="This is an Enterprise-only feature. Please install [Stash Enterprise Edition](/docs/setup/install/enterprise.md) to try this feature." >}}
+
 # Backup and Restore Elasticsearch database using Stash
 
 Stash 0.9.0+ supports backup and restoration of Elasticsearch clusters. This guide will show you how you can backup and restore your Elasticsearch database with Stash.
