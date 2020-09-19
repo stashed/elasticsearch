@@ -6,7 +6,7 @@ metadata:
 spec:
   schedule: "*/5 * * * *"
   task:
-    name: elasticsearch-backup-7.3.2
+    name: elasticsearch-backup-7.3.2-v2
   repository:
     name: gcs-repo
   target:
@@ -18,7 +18,7 @@ spec:
     metadata:
       name: stash-tmp-storage
     spec:
-      accessModes: [ "ReadWriteOnce" ]
+      accessModes: ["ReadWriteOnce"]
       storageClassName: "standard"
       resources:
         requests:
