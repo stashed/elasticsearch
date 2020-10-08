@@ -33,6 +33,8 @@ RUN set -x                                                                      
 
 FROM {ARG_FROM}
 
+LABEL org.opencontainers.image.source https://github.com/stashed/elasticsearch
+
 RUN set -x \
   && apk add --update --no-cache bash ca-certificates curl
 
