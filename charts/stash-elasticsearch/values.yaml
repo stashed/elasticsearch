@@ -13,7 +13,7 @@ image:
   repository: stash-elasticsearch
   # Tag of the image that is used to backup/restore Elasticsearch database.
   # This is usually same as the database version it can backup.
-  tag: 7.3.2-v2
+  tag: 7.3.2-v3
 # optional argument to send multielasticdump
 backup:
   # Arguments to pass to `multielasticdump` command  during backup process
