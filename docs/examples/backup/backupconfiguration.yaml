@@ -6,7 +6,7 @@ metadata:
 spec:
   schedule: "*/5 * * * *"
   task:
-    name: elasticsearch-backup-6.5.3-v3
+    name: elasticsearch-backup-6.5.3-v4
   repository:
     name: gcs-repo
   target:
