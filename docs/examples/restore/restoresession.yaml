@@ -7,7 +7,7 @@ metadata:
     kubedb.com/kind: Elasticsearch # this label is mandatory if you are using KubeDB to deploy the database. Otherwise, Elasticsearch crd will be stuck in `Initializing` phase.
 spec:
   task:
-    name: elasticsearch-restore-6.2.4-v4
+    name: elasticsearch-restore-6.2.4-v5
   repository:
     name: gcs-repo
   target:
