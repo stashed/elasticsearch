@@ -23,7 +23,7 @@ import (
 const (
 	ResourceKindStashElasticsearch = "StashElasticsearch"
 	ResourceStashElasticsearch     = "stashelasticsearch"
-	ResourceStashElasticsearches   = "stashelasticsearches"
+	ResourceStashElasticsearches   = "stashelasticsearchs"
 )
 
 // StashElasticsearch defines the schama for Stash Elasticsearch Installer.
@@ -34,39 +34,39 @@ const (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=stashelasticsearches,singular=stashelasticsearch,categories={stash,appscode}
+// +kubebuilder:resource:path=stashelasticsearchs,singular=stashelasticsearch,categories={stash,appscode}
 type StashElasticsearch struct {
 	metav1.TypeMeta   `json:",inline,omitempty"`
-	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
-	Spec              StashElasticsearchSpec `json:"spec,omitempty" protobuf:"bytes,2,opt,name=spec"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec              StashElasticsearchSpec `json:"spec,omitempty"`
 }
 
 // StashElasticsearchSpec is the schema for Stash Elasticsearch values file
 type StashElasticsearchSpec struct {
 	//+optional
-	NameOverride string `json:"nameOverride" protobuf:"bytes,1,opt,name=nameOverride"`
+	NameOverride string `json:"nameOverride"`
 	//+optional
-	FullnameOverride string               `json:"fullnameOverride" protobuf:"bytes,2,opt,name=fullnameOverride"`
-	Image            ImageRef             `json:"image" protobuf:"bytes,3,opt,name=image"`
-	Backup           ElasticsearchBackup  `json:"backup" protobuf:"bytes,4,opt,name=backup"`
-	Restore          ElasticsearchRestore `json:"restore" protobuf:"bytes,5,opt,name=restore"`
-	WaitTimeout      int64                `json:"waitTimeout" protobuf:"varint,6,opt,name=waitTimeout"`
+	FullnameOverride string               `json:"fullnameOverride"`
+	Image            ImageRef             `json:"image"`
+	Backup           ElasticsearchBackup  `json:"backup"`
+	Restore          ElasticsearchRestore `json:"restore"`
+	WaitTimeout      int64                `json:"waitTimeout"`
 }
 
 type ImageRef struct {
-	Registry   string `json:"registry" protobuf:"bytes,1,opt,name=registry"`
-	Repository string `json:"repository" protobuf:"bytes,2,opt,name=repository"`
-	Tag        string `json:"tag" protobuf:"bytes,3,opt,name=tag"`
+	Registry   string `json:"registry"`
+	Repository string `json:"repository"`
+	Tag        string `json:"tag"`
 }
 
 type ElasticsearchBackup struct {
 	//+optional
-	Args string `json:"args" protobuf:"bytes,1,opt,name=args"`
+	Args string `json:"args"`
 }
 
 type ElasticsearchRestore struct {
 	//+optional
-	Args string `json:"args" protobuf:"bytes,1,opt,name=args"`
+	Args string `json:"args"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -74,7 +74,7 @@ type ElasticsearchRestore struct {
 // StashElasticsearchList is a list of StashElasticsearches
 type StashElasticsearchList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 	// Items is a list of StashElasticsearch CRD objects
-	Items []StashElasticsearch `json:"items,omitempty" protobuf:"bytes,2,rep,name=items"`
+	Items []StashElasticsearch `json:"items,omitempty"`
 }
