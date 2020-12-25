@@ -15,7 +15,7 @@ Install Elasticsearch 7.2.0 backup or restore plugin for Stash as below.
 ```console
 helm repo add appscode https://charts.appscode.com/stable/
 helm repo update
-helm install appscode/stash-elasticsearch --name=stash-elasticsearch-7.2.0 --version=7.2.0
+helm install stash-elasticsearch-7.3.2 appscode/stash-elasticsearch --version=7.3.2 --namespace=kube-system
 ```
 
 To install catalog for all supported Elasticsearch versions, please visit [here](https://github.com/stashed/catalog).
@@ -25,7 +25,7 @@ To install catalog for all supported Elasticsearch versions, please visit [here]
 Uninstall Elasticsearch 7.2.0 backup or restore plugin for Stash as below.
 
 ```console
-helm delete stash-elasticsearch-7.2.0
+helm uninstall stash-elasticsearch-7.3.2 --namespace=kube-system
 ```
 
 ## Support
