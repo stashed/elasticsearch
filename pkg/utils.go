@@ -72,3 +72,10 @@ func clearDir(dir string) error {
 	}
 	return os.MkdirAll(dir, os.ModePerm)
 }
+
+func must(v []byte, err error) string {
+	if err != nil {
+		panic(err)
+	}
+	return string(v)
+}
