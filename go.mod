@@ -8,6 +8,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	go.bytebuilders.dev/license-verifier/kubernetes v0.5.1
 	gomodules.xyz/x v0.0.0-20201105065653-91c568df6331
+	k8s.io/api v0.18.9
 	k8s.io/apimachinery v0.18.9
 	k8s.io/client-go v0.18.9
 	kmodules.xyz/client-go v0.0.0-20210108092221-c3812eb92bd0
