@@ -35,9 +35,11 @@ import (
 	license "go.bytebuilders.dev/license-verifier/kubernetes"
 	"gomodules.xyz/x/flags"
 	"gomodules.xyz/x/log"
+	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+	meta_util "kmodules.xyz/client-go/meta"
 	appcatalog "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	appcatalog_cs "kmodules.xyz/custom-resources/client/clientset/versioned"
 	v1 "kmodules.xyz/offshoot-api/api/v1"
@@ -215,7 +217,13 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 	}
 
 	appSVC := appBinding.Spec.ClientConfig.Service
-	esURL := fmt.Sprintf("%v://%s:%s@%s:%d", appSVC.Scheme, appBindingSecret.Data[ESUser], appBindingSecret.Data[ESPassword], appSVC.Name, appSVC.Port) // TODO: authplugin: none
+	esURL := fmt.Sprintf("%v://%s:%s@%s:%d",
+		appSVC.Scheme,
+		must(meta_util.GetBytesForKeys(appBindingSecret.Data, core.BasicAuthUsernameKey, ESUser)),
+		must(meta_util.GetBytesForKeys(appBindingSecret.Data, core.BasicAuthPasswordKey, ESPassword)),
+		appSVC.Name,
+		appSVC.Port,
+	) // TODO: support backup without authentication
 
 	// wait for DB ready
 	waitForDBReady(appBinding.Spec.ClientConfig.Service.Name, appBinding.Spec.ClientConfig.Service.Port, opt.waitTimeout)
