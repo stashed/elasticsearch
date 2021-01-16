@@ -35,7 +35,8 @@ LABEL org.opencontainers.image.source https://github.com/stashed/elasticsearch
 RUN set -x \
   && apk add --update --no-cache bash ca-certificates curl
 
-RUN npm install elasticdump@6.62.1 -g
+RUN npm config set unsafe-perm true \
+  && npm install elasticdump@6.62.1 -g
 
 COPY --from=0 /restic /bin/restic
 COPY bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
