@@ -74,7 +74,7 @@ func clearDir(dir string) error {
 	if err := os.RemoveAll(dir); err != nil {
 		return fmt.Errorf("unable to clean datadir: %v. Reason: %v", dir, err)
 	}
-	return os.MkdirAll(dir, os.ModePerm)
+	return os.MkdirAll(dir, 0400) // only redable to owner
 }
 
 func must(v []byte, err error) string {
