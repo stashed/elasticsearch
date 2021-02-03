@@ -1,11 +1,11 @@
 ---
 title: Elasticsearch | Stash
-description: Backup and restore Elasticsearch deployed with KubeDB
+description: Backup and restore Elasticsearch database using Stash
 menu:
   docs_{{ .version }}:
     identifier: standalone-elasticsearch-{{ .subproject_version }}
-    name: Deployed with KubeDB
-    parent: stash-elasticsearch-guides-{{ .subproject_version }}-kubedb
+    name: Backup & Restore Elasticsearch
+    parent: stash-elasticsearch-guides-{{ .subproject_version }}
     weight: 10
 product_name: stash
 menu_name: docs_{{ .version }}
@@ -14,16 +14,16 @@ section_menu_id: stash-addons
 
 {{< notice type="warning" message="This is an Enterprise-only feature. Please install [Stash Enterprise Edition](/docs/setup/install/enterprise.md) to try this feature." >}}
 
-# Backup and restore Elasticsearch database deployed with KubeDB
+# Backup and Restore Elasticsearch database using Stash
 
-Stash 0.9.0+ supports backup and restoration of Elasticsearch clusters. This guide will show you how you can backup and restore your KubeDB deployed Elasticsearch database using Stash.
+Stash 0.9.0+ supports backup and restoration of Elasticsearch clusters. This guide will show you how you can backup and restore your Elasticsearch database with Stash.
 
 ## Before You Begin
 
-- At first, you need to have a Kubernetes cluster, and the `kubectl` command-line tool must be configured to communicate with your cluster.
+- At first, you need to have a Kubernetes cluster, and the `kubectl` command-line tool must be configured to communicate with your cluster. If you do not already have a cluster, you can create one by using Minikube.
 - Install Stash in your cluster following the steps [here](/docs/setup/README.md).
 - Install Elasticsearch addon for Stash following the steps [here](/docs/addons/elasticsearch/setup/install.md).
-- Install [KubeDB](https://kubedb.com) in your cluster following the steps [here](https://kubedb.com/docs/latest/setup/install/).
+- Install [KubeDB](https://kubedb.com) in your cluster following the steps [here](https://kubedb.com/docs/latest/setup/install/). This step is optional. You can deploy your database using any method you want. We are using KubeDB because KubeDB simplifies many of the difficult or tedious management tasks of running a production grade databases on private and public clouds.
 - If you are not familiar with how Stash backup and restore Elasticsearch databases, please check the following guide [here](/docs/addons/elasticsearch/overview.md).
 
 You have to be familiar with following custom resources:
@@ -32,7 +32,6 @@ You have to be familiar with following custom resources:
 - [Function](/docs/concepts/crds/function.md)
 - [Task](/docs/concepts/crds/task.md)
 - [BackupConfiguration](/docs/concepts/crds/backupconfiguration.md)
-- [BackupSession](/docs/concepts/crds/backupsession.md)
 - [RestoreSession](/docs/concepts/crds/restoresession.md)
 
 To keep things isolated, we are going to use a separate namespace called `demo` throughout this tutorial. Create `demo` namespace if you haven't created yet.
@@ -42,157 +41,55 @@ $ kubectl create ns demo
 namespace/demo created
 ```
 
->Note: YAML files used in this tutorial are stored [here](https://github.com/stashed/elasticsearch/tree/{{< param "info.subproject_version" >}}/docs/kubedb/examples).
+>Note: YAML files used in this tutorial are stored [here](https://github.com/stashed/elasticsearch/tree/{{< param "info.subproject_version" >}}/docs/examples).
 
-## Prepare Elasticsearch
+## Backup Elasticsearch
 
-In this section, we are going to deploy a Elasticsearch database using KubeDB. Then, we are going to insert some sample data into it.
+This section will demonstrate how to backup an Elasticsearch database. Here, we are going to deploy an Elasticsearch database using KubeDB. Then, we are going to backup this database into a GCS bucket. Finally, we are going to restore the backed up data into another Elasticsearch database.
 
-### Deploy Elasticsearch
+### Deploy Sample Elasticsearch Database
 
-At first, let's deploy a sample Elasticsearch database. Below is the YAML of a sample Elasticsearch crd that we are going to create for this tutorial:
+Let's deploy a sample Elasticsearch database and insert some data into it.
+
+**Create Elasticsearch CRD:**
+
+Below is the YAML of a sample Elasticsearch crd that we are going to create for this tutorial:
 
 ```yaml
-apiVersion: kubedb.com/v1alpha2
+apiVersion: kubedb.com/v1alpha1
 kind: Elasticsearch
 metadata:
-  name: sample-es
+  name: sample-elasticsearch
   namespace: demo
 spec:
-  version: 7.9.1-xpack
+  version: "7.3.2"
   storageType: Durable
-  topology:
-    master:
-      suffix: master
-      replicas: 1
-      storage:
-        storageClassName: "standard"
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
-    data:
-      suffix: data
-      replicas: 2
-      storage:
-        storageClassName: "standard"
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
-    ingest:
-      suffix: client
-      replicas: 2
-      storage:
-        storageClassName: "standard"
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
+  storage:
+    storageClassName: "standard"
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+  terminationPolicy: Delete
 ```
 
-Let's create the above `Elasticsearch` object,
+Create the above `Elasticsearch` crd,
 
 ```console
-$ kubectl apply -f https://github.com/stashed/elasticsearch/raw/{{< param "info.subproject_version" >}}/docs/kubedb/examples/elasticsearch/sample_es.yaml
-elasticsearch.kubedb.com/sample-es created
+$ kubectl apply -f https://github.com/stashed/elasticsearch/raw/{{< param "info.subproject_version" >}}/docs/examples/backup/elasticsearch.yaml
+elasticsearch.kubedb.com/sample-elasticsearch created
 ```
 
-KubeDB will create the necessary resources to deploy the Elasticsearch database according to the above specification. Let's wait until the database to be ready to use,
+KubeDB will deploy an Elasticsearch database according to the above specification. It will also create the necessary secrets and services to access the database.
+
+Let's check if the database is ready to use,
 
 ```console
-❯ kubectl get elasticsearch -n demo -w
-NAME        VERSION       STATUS         AGE
-sample-es   7.9.1-xpack   Provisioning   89s
-sample-es   7.9.1-xpack   Ready          5m26s
+$ kubectl get es -n demo sample-elasticsearch
+NAME                   VERSION       STATUS    AGE
+sample-elasticsearch   7.3.2         Running   3m35s
 ```
-
-The database is in `Ready` state. It means the database is ready to accept connection.
-
-### Insert Sample Data
-
-In this section, we are going to create few indexes in the deployed Elasticsearch. At first, we are going to port-forward the respective Service so that we can connect with the database from our local machine. Then, we are going to insert some data into the Elasticsearch.
-
-#### Port-forward the Service
-
-KubeDB will create few Services to connect with the database. Let's see the Services created by KubeDB for our Elasticsearch,
-
-```bash
-❯ kubectl get service -n demo
-NAME               TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
-sample-es          ClusterIP   10.108.129.195   <none>        9200/TCP   10m
-sample-es-master   ClusterIP   None             <none>        9300/TCP   10m
-sample-es-pods     ClusterIP   None             <none>        9200/TCP   10m
-```
-
-Here, we are going to use the `sample-es` Service to connect with the database.
-
-Now, let's port-forward the `sample-es` Service. Run the following command into a separate terminal.
-
-```bash
-❯ kubectl port-forward -n demo service/sample-es 9200
-Forwarding from 127.0.0.1:9200 -> 9200
-Forwarding from [::1]:9200 -> 9200
-```
-
-#### Export the Credentials
-
-KubeDB will create some Secrets for the database. Let's check which Secrets has been created by KubeDB for our `sample-es` Elasticsearch.
-
-```bash
-❯ kubectl get secret -n demo | grep sample-es
-sample-es-ca-cert          kubernetes.io/tls                     2      21m
-sample-es-config           Opaque                                1      21m
-sample-es-elastic-cred     kubernetes.io/basic-auth              2      21m
-sample-es-token-ctzn5      kubernetes.io/service-account-token   3      21m
-sample-es-transport-cert   kubernetes.io/tls                     3      21m
-```
-
-Here, `sample-es-elastic-cred` contains the credentials require to connect with the database. Let's export the credentials as environment variable to our current shell so that we can easily environment variables to connect with the database.
-
-```bash
-❯ export USER=$(kubectl get secrets -n demo sample-es-elastic-cred -o jsonpath='{.data.\username}' | base64 -d)
-❯ export PASSWORD=$(kubectl get secrets -n demo sample-es-elastic-cred -o jsonpath='{.data.\password}' | base64 -d)
-```
-
-#### Insert data
-
-Now, let's 
-
-## Prepare for Backup
-
-### Ensure Elasticsearch Addons
-### Prepare Backend
-#### Create Storage Secret
-#### Create Repository
-
-
-## Backup
-### Create BackupConfiguration
-### Verify CronJob
-### Wait for BackupSession
-### Verify Backup
-
-## Restore
-
-### Restore into the same Elasticsearch
-#### Temporarily pause backup
-#### Simulate Disaster
-#### Create RestoreSession
-#### Verify Restored Data
-#### Resume Backup
-
-### Restore into different Elasticsearch
-#### Deploy new Elasticsearch
-#### Create RestoreSession
-#### Verify Restored Data
-
-### Restore into different cluster
-
-
 
 The database is `Running`. Verify that KubeDB has created a Secret and a Service for this database using the following commands,
 
