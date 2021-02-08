@@ -74,7 +74,7 @@ func clearDir(dir string) error {
 	if err := os.RemoveAll(dir); err != nil {
 		return fmt.Errorf("unable to clean datadir: %v. Reason: %v", dir, err)
 	}
-	return os.MkdirAll(dir, 0400) // only redable to owner
+	return os.MkdirAll(dir, os.ModePerm)
 }
 
 func must(v []byte, err error) string {
@@ -89,5 +89,5 @@ func writeAuthFile(filename string, cred *core.Secret) error {
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthUsernameKey, ESUser)),
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthPasswordKey, ESPassword)),
 	)
-	return ioutil.WriteFile(filename, []byte(authKeys), os.ModePerm)
+	return ioutil.WriteFile(filename, []byte(authKeys), 0400) // only redable to owner
 }
