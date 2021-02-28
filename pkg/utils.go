@@ -18,6 +18,7 @@ package pkg
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"time"
@@ -26,7 +27,9 @@ import (
 	"stash.appscode.dev/apimachinery/pkg/restic"
 
 	"gomodules.xyz/x/log"
+	core "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	meta_util "kmodules.xyz/client-go/meta"
 	appcatalog_cs "kmodules.xyz/custom-resources/client/clientset/versioned"
 )
 
@@ -35,6 +38,7 @@ const (
 	ESPassword          = "ADMIN_PASSWORD"
 	MultiElasticDumpCMD = "multielasticdump"
 	ESCACertFile        = "root.pem"
+	ESAuthFile          = "auth.txt"
 )
 
 type esOptions struct {
@@ -78,4 +82,12 @@ func must(v []byte, err error) string {
 		panic(err)
 	}
 	return string(v)
+}
+
+func writeAuthFile(filename string, cred *core.Secret) error {
+	authKeys := fmt.Sprintf("user=%s\npassword=%s",
+		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthUsernameKey, ESUser)),
+		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthPasswordKey, ESPassword)),
+	)
+	return ioutil.WriteFile(filename, []byte(authKeys), 0400) // only redable to owner
 }
