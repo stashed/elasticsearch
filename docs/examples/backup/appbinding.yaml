@@ -5,10 +5,7 @@ metadata:
     app.kubernetes.io/component: database
     app.kubernetes.io/instance: sample-elasticsearch
     app.kubernetes.io/managed-by: kubedb.com
-    app.kubernetes.io/name: elasticsearch
-    app.kubernetes.io/version: 6.2.4-v1
-    kubedb.com/kind: Elasticsearch
-    kubedb.com/name: sample-elasticsearch
+    app.kubernetes.io/name: elasticsearches.kubedb.com
   name: sample-elasticsearch
   namespace: demo
 spec:

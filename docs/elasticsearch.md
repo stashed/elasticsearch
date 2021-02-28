@@ -56,7 +56,7 @@ Let's deploy a sample Elasticsearch database and insert some data into it.
 Below is the YAML of a sample Elasticsearch crd that we are going to create for this tutorial:
 
 ```yaml
-apiVersion: kubedb.com/v1alpha1
+apiVersion: kubedb.com/v1alpha2
 kind: Elasticsearch
 metadata:
   name: sample-elasticsearch
@@ -131,10 +131,7 @@ metadata:
     app.kubernetes.io/component: database
     app.kubernetes.io/instance: sample-elasticsearch
     app.kubernetes.io/managed-by: kubedb.com
-    app.kubernetes.io/name: elasticsearch
-    app.kubernetes.io/version: 6.2.4-v1
-    kubedb.com/kind: Elasticsearch
-    kubedb.com/name: sample-elasticsearch
+    app.kubernetes.io/name: elasticsearches.kubedb.com
   name: sample-elasticsearch
   namespace: demo
 spec:
@@ -421,7 +418,7 @@ Now, we have to deploy the restored database similarly as we have deployed the o
 Below is the YAML for `Elasticsearch` crd we are going deploy to initialize from backup,
 
 ```yaml
-apiVersion: kubedb.com/v1alpha1
+apiVersion: kubedb.com/v1alpha2
 kind: Elasticsearch
 metadata:
   name: restored-elasticsearch
@@ -429,8 +426,8 @@ metadata:
 spec:
   version: "6.2.4-v1"
   storageType: Durable
-  databaseSecret:
-    secretName: sample-elasticsearch-auth # use same secret as original the database
+  authSecret:
+    name: sample-elasticsearch-auth # use same secret as original the database
   storage:
     storageClassName: "standard"
     accessModes:
@@ -439,14 +436,13 @@ spec:
       requests:
         storage: 1Gi
   init:
-    stashRestoreSession:
-      name: sample-elasticsearch-restore
+    waitForInitialRestore: true
   terminationPolicy: Delete
 ```
 
 Here,
 
-- `spec.init.stashRestoreSession.name` specifies the `RestoreSession` crd name that we are going to use to restore this database.
+- `spec.init.waitForInitialRestore` tells KubeDB to wait for the first restore to complete before marking this database as ready to use.
 
 Let's create the above database,
 
@@ -486,7 +482,7 @@ metadata:
   name: sample-elasticsearch-restore
   namespace: demo
   labels:
-    kubedb.com/kind: Elasticsearch # this label is mandatory if you are using KubeDB to deploy the database. Otherwise, Elasticsearch crd will be stuck in `Initializing` phase.
+    app.kubernetes.io/name: elasticsearches.kubedb.com # this label is mandatory if you are using KubeDB to deploy the database. Otherwise, Elasticsearch crd will be stuck in `Provisioning` phase.
 spec:
   task:
     name: elasticsearch-restore-{{< param "info.subproject_version" >}}
@@ -512,14 +508,14 @@ spec:
 
 Here,
 
-- `metadata.labels` specifies a `kubedb.com/kind: Elasticsearch` label that is used by KubeDB to watch this `RestoreSession`.
+- `metadata.labels` specifies a `app.kubernetes.io/name: elasticsearches.kubedb.com` label that is used by KubeDB to watch this `RestoreSession`.
 - `spec.task.name` specifies the name of the `Task` crd that specifies the Functions and their execution order to restore an Elasticsearch database.
 - `spec.repository.name` specifies the `Repository` crd that holds the backend information where our backed up data has been stored.
 - `spec.target.ref` refers to the AppBinding crd for the `restored-elasticsearch` database.
 - `spec.interimVolumeTemplate` specifies a PVC template to store the restored data temporarily before inserting into the targeted Elasticsearch database.
 - `spec.rules` specifies that we are restoring from the latest backup snapshot of the database.
 
-> **Warning:** Label `kubedb.com/kind: Elasticsearch` is mandatory if you are using KubeDB to deploy the database. Otherwise, the database will be stuck in `Initializing` state.
+> **Warning:** Label `app.kubernetes.io/name: elasticsearches.kubedb.com` is mandatory if you are using KubeDB to deploy the database. Otherwise, the database will be stuck in `Provisioning` state.
 
 Let's create the `RestoreSession` crd we have shown above,
 
