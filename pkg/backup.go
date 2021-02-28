@@ -35,11 +35,9 @@ import (
 	license "go.bytebuilders.dev/license-verifier/kubernetes"
 	"gomodules.xyz/x/flags"
 	"gomodules.xyz/x/log"
-	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
-	meta_util "kmodules.xyz/client-go/meta"
 	appcatalog "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	appcatalog_cs "kmodules.xyz/custom-resources/client/clientset/versioned"
 	v1 "kmodules.xyz/offshoot-api/api/v1"
@@ -208,6 +206,14 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 		return nil, err
 	}
 
+	// write the credential ifo into a file
+	// TODO: support backup without authentication
+	httpAuthFilePath := filepath.Join(opt.setupOptions.ScratchDir, ESAuthFile)
+	err = writeAuthFile(httpAuthFilePath, appBindingSecret)
+	if err != nil {
+		return nil, err
+	}
+
 	var tlsArgs string
 	if appBinding.Spec.ClientConfig.CABundle != nil {
 		if err := ioutil.WriteFile(filepath.Join(opt.setupOptions.ScratchDir, ESCACertFile), appBinding.Spec.ClientConfig.CABundle, os.ModePerm); err != nil {
@@ -217,13 +223,7 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 	}
 
 	appSVC := appBinding.Spec.ClientConfig.Service
-	esURL := fmt.Sprintf("%v://%s:%s@%s:%d",
-		appSVC.Scheme,
-		must(meta_util.GetBytesForKeys(appBindingSecret.Data, core.BasicAuthUsernameKey, ESUser)),
-		must(meta_util.GetBytesForKeys(appBindingSecret.Data, core.BasicAuthPasswordKey, ESPassword)),
-		appSVC.Name,
-		appSVC.Port,
-	) // TODO: support backup without authentication
+	esURL := fmt.Sprintf("%v://%s:%d", appSVC.Scheme, appSVC.Name, appSVC.Port)
 
 	// wait for DB ready
 	waitForDBReady(appBinding.Spec.ClientConfig.Service.Name, appBinding.Spec.ClientConfig.Service.Port, opt.waitTimeout)
@@ -232,13 +232,12 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 	log.Infoln("Performing multielasticdump on ", appSVC.Name)
 	esShell := sh.NewSession()
 	esShell.ShowCMD = false
-	esShell.Stdout = ioutil.Discard
 	esShell.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") //xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
 
 	args := []interface{}{
 		fmt.Sprintf(`--input=%v`, esURL),
 		fmt.Sprintf(`--output=%v`, opt.interimDataDir),
-		"--ignoreType=alias,settings,template", // ref: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+		fmt.Sprintf("--httpAuthFile=%s", httpAuthFilePath),
 		tlsArgs,
 	}
 	for _, arg := range strings.Fields(opt.esArgs) {

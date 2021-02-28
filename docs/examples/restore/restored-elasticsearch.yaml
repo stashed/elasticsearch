@@ -1,4 +1,4 @@
-apiVersion: kubedb.com/v1alpha1
+apiVersion: kubedb.com/v1alpha2
 kind: Elasticsearch
 metadata:
   name: restored-elasticsearch
@@ -6,8 +6,8 @@ metadata:
 spec:
   version: "5.6.4-v1"
   storageType: Durable
-  databaseSecret:
-    secretName: sample-elasticsearch-auth # use same secret as original the database
+  authSecret:
+    name: sample-elasticsearch-auth # use same secret as original the database
   storage:
     storageClassName: "standard"
     accessModes:
@@ -16,6 +16,5 @@ spec:
       requests:
         storage: 1Gi
   init:
-    stashRestoreSession:
-      name: sample-elasticsearch-restore
+    waitForInitialRestore: true
   terminationPolicy: Delete
