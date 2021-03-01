@@ -6,6 +6,6 @@ metadata:
 spec:
   backend:
     gcs:
-      bucket: appscode-qa
-      prefix: demo/elasticsearch/sample-elasticsearch
+      bucket: stash-testing
+      prefix: /demo/sample-es
     storageSecretName: gcs-secret

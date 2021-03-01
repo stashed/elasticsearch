@@ -1,24 +1,24 @@
 apiVersion: stash.appscode.com/v1beta1
 kind: BackupConfiguration
 metadata:
-  name: sample-elasticsearch-backup
+  name: sample-es-backup
   namespace: demo
 spec:
   schedule: "*/5 * * * *"
   task:
-    name: elasticsearch-backup-5.6.4-v6
+    name: elasticsearch-backup-7.3.2-v6
   repository:
     name: gcs-repo
   target:
     ref:
       apiVersion: appcatalog.appscode.com/v1alpha1
       kind: AppBinding
-      name: sample-elasticsearch
+      name: sample-es
   interimVolumeTemplate:
     metadata:
-      name: stash-tmp-storage
+      name: sample-es-backup-tmp-storage
     spec:
-      accessModes: ["ReadWriteOnce"]
+      accessModes: [ "ReadWriteOnce" ]
       storageClassName: "standard"
       resources:
         requests:
