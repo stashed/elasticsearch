@@ -59,7 +59,7 @@ metadata:
   name: sample-es
   namespace: demo
 spec:
-  version: 7.9.1-xpack
+  version: xpack-7.9.1-v1
   storageType: Durable
   topology:
     master:
@@ -106,8 +106,8 @@ KubeDB will create the necessary resources to deploy the Elasticsearch database 
 ```console
 ❯ kubectl get elasticsearch -n demo -w
 NAME        VERSION       STATUS         AGE
-sample-es   7.9.1-xpack   Provisioning   89s
-sample-es   7.9.1-xpack   Ready          5m26s
+sample-es   xpack-7.9.1-v1   Provisioning   89s
+sample-es   xpack-7.9.1-v1   Ready          5m26s
 ```
 
 The database is in `Ready` state. It means the database is ready to accept connections.
@@ -429,6 +429,8 @@ metadata:
   namespace: demo
 spec:
   schedule: "*/5 * * * *"
+#  task: # Uncomment if you are not using KubeDB to deploy your database.
+#    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -454,6 +456,7 @@ spec:
 Here,
 
 - `.spec.schedule` specifies that we want to backup the database every 5th minutes.
+- `.spec.task.name` specifies the name of the `Task` object that specifies the necessary `Functions` and their execution order to backup an Elasticsearch database.
 - `.spec.target.ref` refers to the `AppBinding` object that holds the connection information of our targeted database.
 - `spec.interimVolumeTemplate` specifies a PVC template that will be used by Stash to hold the dumped data temporarily before uploading it into the cloud bucket.
 
@@ -589,6 +592,8 @@ metadata:
   name: sample-es-restore
   namespace: demo
 spec:
+#  task: # Uncomment if you are not using KubeDB to deploy your database.
+#    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -611,6 +616,7 @@ spec:
 
 Here,
 
+- `.spec.task.name` specifies the name of the `Task` object that specifies the necessary `Functions` and their execution order to restore an Elasticsearch database.
 - `.spec.repository.name` specifies the `Repository` object that holds the backend information where our backed up data has been stored.
 - `.spec.target.ref` refers to the respective `AppBinding` of the `sample-es` database.
 - `spec.interimVolumeTemplate` specifies a PVC template that will be used by Stash to hold the restored data temporarily before injecting it into the database.
@@ -950,6 +956,8 @@ metadata:
   name: init-sample-restore
   namespace: restored
 spec:
+#  task: # Uncomment if you are not using KubeDB to deploy your database.
+#    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:

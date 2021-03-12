@@ -35,7 +35,7 @@ metadata:
 spec:
   schedule: "*/2 * * * *"
   task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
+#    name: elasticsearch-backup-{{< param "info.subproject_version" >}} # Uncomment if you are not using KubeDB to deploy your database
     params:
     - name: args
       value: --ignoreType=template,settings
@@ -74,7 +74,7 @@ metadata:
 spec:
   schedule: "*/2 * * * *"
   task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
+#    name: elasticsearch-backup-{{< param "info.subproject_version" >}} # Uncomment if you are not using KubeDB to deploy your database
     params:
     - name: args
       value: --match=^(?![.])(?!searchguard).+ --ignoreType=template
@@ -112,8 +112,8 @@ metadata:
   namespace: demo
 spec:
   schedule: "*/2 * * * *"
-  task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
+#  task: # Uncomment if you are not using KubeDB to deploy your database
+#    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -153,8 +153,8 @@ metadata:
   namespace: demo
 spec:
   schedule: "*/2 * * * *"
-  task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
+#  task: # Uncomment if you are not using KubeDB to deploy your database
+#    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -198,8 +198,8 @@ metadata:
   namespace: demo
 spec:
   schedule: "*/2 * * * *"
-  task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
+#  task: # Uncomment if you are not using KubeDB to deploy your database
+#    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -244,7 +244,7 @@ metadata:
   namespace: demo
 spec:
   task:
-    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
+#    name: elasticsearch-restore-{{< param "info.subproject_version" >}} # Uncomment if you are not using KubeDB to deploy your database
     params:
     - name: args
       value: --ignoreType=template,settings
@@ -294,8 +294,8 @@ metadata:
   name: sample-elasticsearch-restore
   namespace: demo
 spec:
-  task:
-    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
+#  task: # Uncomment if you are not using KubeDB to deploy your database
+#    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -329,8 +329,8 @@ metadata:
   name: sample-elasticsearch-restore
   namespace: demo
 spec:
-  task:
-    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
+#  task: # Uncomment if you are not using KubeDB to deploy your database
+#    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -367,8 +367,8 @@ metadata:
   name: sample-elasticsearch-restore
   namespace: demo
 spec:
-  task:
-    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
+#  task: # Uncomment if you are not using KubeDB to deploy your database
+#    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:

@@ -92,6 +92,8 @@ spec:
       prefix: stash-backup/${TARGET_NAMESPACE}/${TARGET_APP_RESOURCE}/${TARGET_NAME}
     storageSecretName: gcs-secret
   # ============== Blueprint for BackupConfiguration =================
+#  task: # Uncomment if you are not using KubeDB to deploy your database.
+#    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
   schedule: "*/5 * * * *"
   interimVolumeTemplate:
     metadata:
@@ -155,7 +157,7 @@ metadata:
   annotations:
     stash.appscode.com/backup-blueprint: elasticsearch-backup-template
 spec:
-  version: 7.9.1-xpack
+  version: xpack-7.9.1-v1
   replicas: 1
   storageType: Durable
   storage:
@@ -334,7 +336,7 @@ metadata:
     stash.appscode.com/backup-blueprint: elasticsearch-backup-template
     stash.appscode.com/schedule: "*/3 * * * *"
 spec:
-  version: 7.9.1-xpack
+  version: xpack-7.9.1-v1
   replicas: 1
   storageType: Durable
   storage:
@@ -513,7 +515,7 @@ metadata:
     stash.appscode.com/backup-blueprint: elasticsearch-backup-template
     params.stash.appscode.com/args: --ignoreType=settings,template
 spec:
-  version: 7.9.1-xpack
+  version: xpack-7.9.1-v1
   replicas: 1
   storageType: Durable
   storage:
