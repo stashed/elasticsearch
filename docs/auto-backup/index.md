@@ -92,8 +92,6 @@ spec:
       prefix: stash-backup/${TARGET_NAMESPACE}/${TARGET_APP_RESOURCE}/${TARGET_NAME}
     storageSecretName: gcs-secret
   # ============== Blueprint for BackupConfiguration =================
-  task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
   schedule: "*/5 * * * *"
   interimVolumeTemplate:
     metadata:
@@ -257,8 +255,6 @@ spec:
       apiVersion: appcatalog.appscode.com/v1alpha1
       kind: AppBinding
       name: es-demo
-  task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
   tempDir: {}
 status:
   conditions:
@@ -438,8 +434,6 @@ spec:
       apiVersion: appcatalog.appscode.com/v1alpha1
       kind: AppBinding
       name: es-demo-2
-  task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
   tempDir: {}
 status:
   conditions:
@@ -620,7 +614,6 @@ spec:
       kind: AppBinding
       name: es-demo-3
   task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
     params:
     - name: args
       value: --ignoreType=settings,template

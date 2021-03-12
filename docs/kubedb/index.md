@@ -350,9 +350,22 @@ spec:
       scheme: http
   secret:
     name: sample-es-elastic-cred
+  parameters:
+    apiVersion: appcatalog.appscode.com/v1alpha1
+    kind: StashAddon
+    stash:
+      addon:
+        backupTask:
+          name: elasticsearch-backup-{{< param "info.subproject_version" >}}
+        restoreTask:
+          name: elasticsearch-restore-{{< param "info.subproject_version" >}}
   type: kubedb.com/elasticsearch
   version: 7.9.1
 ```
+
+Here,
+
+- `spec.parameters.stash` section specifies the Stash Addon that will be used to backup and restore this Elasticsearch.
 
 ### Prepare Backend
 
@@ -416,8 +429,6 @@ metadata:
   namespace: demo
 spec:
   schedule: "*/5 * * * *"
-  task:
-    name: elasticsearch-backup-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -443,7 +454,6 @@ spec:
 Here,
 
 - `.spec.schedule` specifies that we want to backup the database every 5th minutes.
-- `.spec.task.name` specifies the name of the `Task` object that specifies the necessary `Functions` and their execution order to backup an Elasticsearch database.
 - `.spec.target.ref` refers to the `AppBinding` object that holds the connection information of our targeted database.
 - `spec.interimVolumeTemplate` specifies a PVC template that will be used by Stash to hold the dumped data temporarily before uploading it into the cloud bucket.
 
@@ -578,11 +588,7 @@ kind: RestoreSession
 metadata:
   name: sample-es-restore
   namespace: demo
-  labels:
-    app.kubernetes.io/name: elasticsearches.kubedb.com
 spec:
-  task:
-    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -605,13 +611,10 @@ spec:
 
 Here,
 
-- `.spec.task.name` specifies the name of the `Task` object that specifies the necessary `Functions` and their execution order to restore an Elasticsearch database.
 - `.spec.repository.name` specifies the `Repository` object that holds the backend information where our backed up data has been stored.
 - `.spec.target.ref` refers to the respective `AppBinding` of the `sample-es` database.
 - `spec.interimVolumeTemplate` specifies a PVC template that will be used by Stash to hold the restored data temporarily before injecting it into the database.
 - `.spec.rules` specifies that we are restoring data from the latest backup snapshot of the database.
-
->Notice the `app.kubernetes.io/name: elasticsearches.kubedb.com` label. KubeDB uses this label to watch the `RestoreSession` for the Elasticsearch databases. So, make sure you have added this label in the `RestoreSession`.
 
 Let's create the `RestoreSession` object object we have shown above,
 
@@ -946,11 +949,7 @@ kind: RestoreSession
 metadata:
   name: init-sample-restore
   namespace: restored
-  labels:
-    app.kubernetes.io/name: elasticsearches.kubedb.com
 spec:
-  task:
-    name: elasticsearch-restore-{{< param "info.subproject_version" >}}
   repository:
     name: gcs-repo
   target:
@@ -970,8 +969,6 @@ spec:
   rules:
   - snapshots: [latest]
 ```
-
->Notice the `app.kubernetes.io/name: elasticsearches.kubedb.com` label. KubeDB uses this label to watch the `RestoreSession` of Elasticsearch databases. So, make sure you have added this label in the `RestoreSession`. Otherwise, your Elasticsearch database will get stuck in the `Provisioning` state even if the data has been restored properly.
 
 Let's create the above RestoreSession,
 

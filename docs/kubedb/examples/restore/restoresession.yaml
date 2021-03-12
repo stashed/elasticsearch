@@ -3,11 +3,7 @@ kind: RestoreSession
 metadata:
   name: sample-es-restore
   namespace: demo
-  labels:
-    app.kubernetes.io/name: elasticsearches.kubedb.com
 spec:
-  task:
-    name: elasticsearch-restore-7.3.2-v6
   repository:
     name: gcs-repo
   target:

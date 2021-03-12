@@ -77,7 +77,7 @@ spec:
     name: elasticsearch-backup-{{< param "info.subproject_version" >}}
     params:
     - name: args
-      value: --match=^(?!searchguard)([a-zA-Z0-9_-]+)$ --ignoreType=template
+      value: --match=^(?![.])(?!searchguard).+ --ignoreType=template
   repository:
     name: gcs-repo
   target:
@@ -242,8 +242,6 @@ kind: RestoreSession
 metadata:
   name: sample-elasticsearch-restore
   namespace: demo
-  labels:
-    app.kubernetes.io/name: elasticsearches.kubedb.com
 spec:
   task:
     name: elasticsearch-restore-{{< param "info.subproject_version" >}}
@@ -295,8 +293,6 @@ kind: RestoreSession
 metadata:
   name: sample-elasticsearch-restore
   namespace: demo
-  labels:
-    app.kubernetes.io/name: elasticsearches.kubedb.com
 spec:
   task:
     name: elasticsearch-restore-{{< param "info.subproject_version" >}}
@@ -332,8 +328,6 @@ kind: RestoreSession
 metadata:
   name: sample-elasticsearch-restore
   namespace: demo
-  labels:
-    app.kubernetes.io/name: elasticsearches.kubedb.com
 spec:
   task:
     name: elasticsearch-restore-{{< param "info.subproject_version" >}}
@@ -372,8 +366,6 @@ kind: RestoreSession
 metadata:
   name: sample-elasticsearch-restore
   namespace: demo
-  labels:
-    app.kubernetes.io/name: elasticsearches.kubedb.com
 spec:
   task:
     name: elasticsearch-restore-{{< param "info.subproject_version" >}}
