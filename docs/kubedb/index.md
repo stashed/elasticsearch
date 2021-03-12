@@ -847,7 +847,7 @@ metadata:
   name: init-sample
   namespace: restored
 spec:
-  version: 1.9.0-opendistro
+  version: opendistro-1.11.0
   storageType: Durable
   init:
     waitForInitialRestore: true
