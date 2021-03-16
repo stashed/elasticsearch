@@ -131,6 +131,10 @@ version:
 	@echo ::set-output name=commit_hash::$(commit_hash)
 	@echo ::set-output name=commit_timestamp::$(commit_timestamp)
 
+.PHONY: gen
+gen:
+	@true
+
 fmt: $(BUILD_DIRS)
 	@docker run                                                 \
 	    -i                                                      \
@@ -285,10 +289,10 @@ $(BUILD_DIRS):
 	@mkdir -p $@
 
 .PHONY: dev
-dev: fmt push
+dev: gen fmt push
 
 .PHONY: verify
-verify: verify-modules
+verify: verify-gen verify-modules
 
 .PHONY: verify-modules
 verify-modules:
@@ -296,6 +300,12 @@ verify-modules:
 	GO111MODULE=on go mod vendor
 	@if !(git diff --exit-code HEAD); then \
 		echo "go module files are out of date"; exit 1; \
+	fi
+
+.PHONY: verify-gen
+verify-gen: gen fmt
+	@if !(git diff --exit-code HEAD); then \
+		echo "generated files are out of date, run make gen"; exit 1; \
 	fi
 
 .PHONY: add-license
