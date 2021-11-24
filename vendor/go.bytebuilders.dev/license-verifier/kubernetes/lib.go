@@ -74,7 +74,7 @@ func NewLicenseEnforcer(config *rest.Config, licenseFile string) *LicenseEnforce
 		config:      config,
 		opts: &verifier.Options{
 			CACert:   []byte(info.LicenseCA),
-			Features: info.ProductName,
+			Features: info.Features(),
 		},
 	}
 }
@@ -207,7 +207,7 @@ func (le *LicenseEnforcer) LoadLicense() v1alpha1.License {
 	block, _ := pem.Decode(le.opts.License)
 	if block == nil {
 		// This probably is a JWT token, should be check for that when ready
-		license, _ := verifier.BadLicense(errors.New("failed to parse certificate PEM"))
+		license, _ := verifier.BadLicense(fmt.Errorf("failed to parse certificate PEM %s", string(le.opts.License)))
 		return license
 	}
 
@@ -227,7 +227,7 @@ func VerifyLicensePeriodically(config *rest.Config, licenseFile string, stopCh <
 		config:      config,
 		opts: &verifier.Options{
 			CACert:   []byte(info.LicenseCA),
-			Features: info.ProductName,
+			Features: info.Features(),
 		},
 	}
 
@@ -286,7 +286,7 @@ func CheckLicenseFile(config *rest.Config, licenseFile string) error {
 		config:      config,
 		opts: &verifier.Options{
 			CACert:   []byte(info.LicenseCA),
-			Features: info.ProductName,
+			Features: info.Features(),
 		},
 	}
 
