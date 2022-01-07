@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"time"
 
+	kmapi "kmodules.xyz/client-go/api/v1"
 	stash "stash.appscode.dev/apimachinery/client/clientset/versioned"
 	"stash.appscode.dev/apimachinery/pkg/restic"
 
@@ -52,6 +53,7 @@ type esOptions struct {
 	esArgs            string
 	interimDataDir    string
 	outputDir         string
+	storageSecret     kmapi.ObjectReference
 	waitTimeout       int32
 
 	setupOptions   restic.SetupOptions
