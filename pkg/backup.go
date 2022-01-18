@@ -19,10 +19,7 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	api_v1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
@@ -33,7 +30,6 @@ import (
 	"github.com/spf13/cobra"
 	license "go.bytebuilders.dev/license-verifier/kubernetes"
 	"gomodules.xyz/flags"
-	"gomodules.xyz/go-sh"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -195,74 +191,42 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 		return nil, err
 	}
 
-	appBindingSecret, err := opt.kubeClient.CoreV1().Secrets(opt.namespace).Get(context.TODO(), appBinding.Spec.Secret.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	err = appBinding.TransformSecret(opt.kubeClient, appBindingSecret.Data)
-	if err != nil {
-		return nil, err
-	}
-
 	// clear directory before running multielasticdump
+	session := opt.newSessionWrapper(MultiElasticDumpCMD)
+
+	err = opt.setDatabaseCredentials(appBinding, session.cmd)
+	if err != nil {
+		return nil, err
+	}
 	klog.Infoln("Cleaning up directory: ", opt.interimDataDir)
 	if err := clearDir(opt.interimDataDir); err != nil {
 		return nil, err
-	}
-
-	// write the credential ifo into a file
-	// TODO: support backup without authentication
-	httpAuthFilePath := filepath.Join(opt.setupOptions.ScratchDir, ESAuthFile)
-	err = writeAuthFile(httpAuthFilePath, appBindingSecret)
-	if err != nil {
-		return nil, err
-	}
-
-	var tlsArgs string
-	if appBinding.Spec.ClientConfig.CABundle != nil {
-		if err := ioutil.WriteFile(filepath.Join(opt.setupOptions.ScratchDir, ESCACertFile), appBinding.Spec.ClientConfig.CABundle, os.ModePerm); err != nil {
-			return nil, err
-		}
-		tlsArgs = fmt.Sprintf("--ca-input=%v", filepath.Join(opt.setupOptions.ScratchDir, ESCACertFile))
 	}
 
 	url, err := appBinding.URL()
 	if err != nil {
 		return nil, err
 	}
-
-	hostname, err := appBinding.Hostname()
-	if err != nil {
-		return nil, err
-	}
-
-	port, err := appBinding.Port()
-	if err != nil {
-		return nil, err
-	}
-
-	waitForDBReady(hostname, port, opt.waitTimeout)
-
-	// run separate shell to dump indices
-	klog.Infoln("Performing multielasticdump on", hostname)
-	esShell := sh.NewSession()
-	esShell.ShowCMD = false
-	esShell.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") //xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
-
-	args := []interface{}{
+	session.cmd.Args = append(session.cmd.Args, []interface{}{
 		fmt.Sprintf(`--input=%v`, url),
 		fmt.Sprintf(`--output=%v`, opt.interimDataDir),
-		fmt.Sprintf("--httpAuthFile=%s", httpAuthFilePath),
-		tlsArgs,
-	}
-	for _, arg := range strings.Fields(opt.esArgs) {
-		args = append(args, arg)
+	}...)
+
+	err = session.setTLSParameters(appBinding, opt.setupOptions.ScratchDir)
+	if err != nil {
+		return nil, err
 	}
 
-	esShell.Command(MultiElasticDumpCMD, args...) // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+	err = opt.waitForDBReady(appBinding)
+	if err != nil {
+		return nil, err
+	}
 
-	if err := esShell.Run(); err != nil {
+	session.sh.ShowCMD = false
+	session.setUserArgs(opt.esArgs)
+	session.sh.Command(session.cmd.Name, session.cmd.Args...) // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
+
+	if err := session.sh.Run(); err != nil {
 		return nil, err
 	}
 
