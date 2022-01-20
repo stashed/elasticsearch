@@ -19,10 +19,7 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
-	"strings"
 
 	api_v1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
 	"stash.appscode.dev/apimachinery/pkg/restic"
@@ -30,7 +27,6 @@ import (
 	"github.com/spf13/cobra"
 	license "go.bytebuilders.dev/license-verifier/kubernetes"
 	"gomodules.xyz/flags"
-	"gomodules.xyz/go-sh"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
@@ -61,7 +57,7 @@ func NewCmdRestore() *cobra.Command {
 		Short:             "Restores Elasticsearch DB Backup",
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			flags.EnsureRequiredFlags(cmd, "appbinding", "provider", "secret-dir")
+			flags.EnsureRequiredFlags(cmd, "appbinding", "provider", "storage-secret-name", "storage-secret-namespace")
 
 			// prepare client
 			config, err := clientcmd.BuildConfigFromFlags(masterURL, kubeconfigPath)
@@ -117,13 +113,14 @@ func NewCmdRestore() *cobra.Command {
 	cmd.Flags().StringVar(&kubeconfigPath, "kubeconfig", kubeconfigPath, "Path to kubeconfig file with authorization information (the master location is set by the master flag).")
 	cmd.Flags().StringVar(&opt.namespace, "namespace", "default", "Namespace of Backup/Restore Session")
 	cmd.Flags().StringVar(&opt.appBindingName, "appbinding", opt.appBindingName, "Name of the app binding")
+	cmd.Flags().StringVar(&opt.storageSecret.Name, "storage-secret-name", opt.storageSecret.Name, "Name of the storage secret")
+	cmd.Flags().StringVar(&opt.storageSecret.Namespace, "storage-secret-namespace", opt.storageSecret.Namespace, "Namespace of the storage secret")
 
 	cmd.Flags().StringVar(&opt.setupOptions.Provider, "provider", opt.setupOptions.Provider, "Backend provider (i.e. gcs, s3, azure etc)")
 	cmd.Flags().StringVar(&opt.setupOptions.Bucket, "bucket", opt.setupOptions.Bucket, "Name of the cloud bucket/container (keep empty for local backend)")
 	cmd.Flags().StringVar(&opt.setupOptions.Endpoint, "endpoint", opt.setupOptions.Endpoint, "Endpoint for s3/s3 compatible backend or REST server URL")
 	cmd.Flags().StringVar(&opt.setupOptions.Region, "region", opt.setupOptions.Region, "Region for s3/s3 compatible backend")
 	cmd.Flags().StringVar(&opt.setupOptions.Path, "path", opt.setupOptions.Path, "Directory inside the bucket where backup will be stored")
-	cmd.Flags().StringVar(&opt.setupOptions.SecretDir, "secret-dir", opt.setupOptions.SecretDir, "Directory where storage secret has been mounted")
 	cmd.Flags().StringVar(&opt.setupOptions.ScratchDir, "scratch-dir", opt.setupOptions.ScratchDir, "Temporary directory")
 	cmd.Flags().BoolVar(&opt.setupOptions.EnableCache, "enable-cache", opt.setupOptions.EnableCache, "Specify whether to enable caching for restic")
 	cmd.Flags().Int64Var(&opt.setupOptions.MaxConnections, "max-connections", opt.setupOptions.MaxConnections, "Specify maximum concurrent connections for GCS, Azure and B2 backend")
@@ -139,8 +136,13 @@ func NewCmdRestore() *cobra.Command {
 }
 
 func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*restic.RestoreOutput, error) {
-	// apply nice, ionice settings from env
 	var err error
+	opt.setupOptions.StorageSecret, err = opt.kubeClient.CoreV1().Secrets(opt.storageSecret.Namespace).Get(context.TODO(), opt.storageSecret.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	// apply nice, ionice settings from env
 	opt.setupOptions.Nice, err = v1.NiceSettingsFromEnv()
 	if err != nil {
 		return nil, err
@@ -150,19 +152,15 @@ func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*re
 		return nil, err
 	}
 
-	// get app binding
 	appBinding, err := opt.catalogClient.AppcatalogV1alpha1().AppBindings(opt.namespace).Get(context.TODO(), opt.appBindingName, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
-	// get secret
-	appBindingSecret, err := opt.kubeClient.CoreV1().Secrets(opt.namespace).Get(context.TODO(), appBinding.Spec.Secret.Name, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
 
-	// transform secret
-	err = appBinding.TransformSecret(opt.kubeClient, appBindingSecret.Data)
+	// clear directory before running multielasticdump
+	session := opt.newSessionWrapper(MultiElasticDumpCMD)
+
+	err = opt.setDatabaseCredentials(appBinding, session.cmd)
 	if err != nil {
 		return nil, err
 	}
@@ -173,27 +171,26 @@ func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*re
 		return nil, err
 	}
 
-	// write the credential ifo into a file
-	// TODO: support backup without authentication
-	httpAuthFilePath := filepath.Join(opt.setupOptions.ScratchDir, ESAuthFile)
-	err = writeAuthFile(httpAuthFilePath, appBindingSecret)
+	url, err := appBinding.URL()
 	if err != nil {
 		return nil, err
 	}
 
-	var tlsArgs string
-	if appBinding.Spec.ClientConfig.CABundle != nil {
-		if err := ioutil.WriteFile(filepath.Join(opt.setupOptions.ScratchDir, ESCACertFile), appBinding.Spec.ClientConfig.CABundle, os.ModePerm); err != nil {
-			return nil, fmt.Errorf("failed to write key for CA certificate. reason: %v", err)
-		}
-		tlsArgs = fmt.Sprintf("--ca-input=%v", filepath.Join(opt.setupOptions.ScratchDir, ESCACertFile))
+	session.cmd.Args = append(session.cmd.Args, []interface{}{
+		"--direction=load",
+		fmt.Sprintf(`--input=%v`, opt.interimDataDir),
+		fmt.Sprintf(`--output=%v`, url),
+	}...)
+
+	err = session.setTLSParameters(appBinding, opt.setupOptions.ScratchDir)
+	if err != nil {
+		return nil, err
 	}
 
-	appSVC := appBinding.Spec.ClientConfig.Service
-	esURL := fmt.Sprintf("%v://%s:%d", appSVC.Scheme, appSVC.Name, appSVC.Port)
-
-	// wait for DB ready
-	waitForDBReady(appBinding.Spec.ClientConfig.Service.Name, appBinding.Spec.ClientConfig.Service.Port, opt.waitTimeout)
+	err = opt.waitForDBReady(appBinding)
+	if err != nil {
+		return nil, err
+	}
 
 	// we will restore the desired data into interim data dir before injecting into the desired database
 	opt.restoreOptions.RestorePaths = []string{opt.interimDataDir}
@@ -204,32 +201,19 @@ func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*re
 		return nil, err
 	}
 
-	// Run restore
 	restoreOutput, err := resticWrapper.RunRestore(opt.restoreOptions, targetRef)
 	if err != nil {
 		return nil, err
 	}
 
 	// run separate shell to restore indices
-	klog.Infoln("Performing multielasticdump on ", appSVC.Name)
-	esShell := sh.NewSession()
-	esShell.ShowCMD = false
-	esShell.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") //xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
+	// klog.Infoln("Performing multielasticdump on", hostname)
 
-	args := []interface{}{
-		"--direction=load",
-		fmt.Sprintf(`--input=%v`, opt.interimDataDir),
-		fmt.Sprintf(`--output=%v`, esURL),
-		fmt.Sprintf("--httpAuthFile=%s", httpAuthFilePath),
-		tlsArgs,
-	}
-	for _, arg := range strings.Fields(opt.esArgs) {
-		args = append(args, arg)
-	}
+	session.sh.ShowCMD = false
+	session.setUserArgs(opt.esArgs)
+	session.sh.Command(session.cmd.Name, session.cmd.Args...) // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
 
-	esShell.Command(MultiElasticDumpCMD, args...) // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
-
-	if err := esShell.Run(); err != nil {
+	if err := session.sh.Run(); err != nil {
 		return nil, err
 	}
 	return restoreOutput, nil
