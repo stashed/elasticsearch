@@ -30,7 +30,7 @@ var SupportedProducts = []string{"stash-enterprise", "kubedb-ext-stash"}
 var licenseApiService string
 
 func NewRootCmd() *cobra.Command {
-	var rootCmd = &cobra.Command{
+	rootCmd := &cobra.Command{
 		Use:               "stash-elasticsearch",
 		Short:             `Elasticsearch backup & restore plugin for Stash by AppsCode`,
 		Long:              `Elasticsearch backup & restore plugin for Stash by AppsCode. For more information, visit here: https://appscode.com/products/stash`,
