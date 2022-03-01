@@ -108,7 +108,7 @@ func (session *sessionWrapper) setUserArgs(args string) {
 }
 
 func (session *sessionWrapper) setTLSParameters(appBinding *appcatalog.AppBinding, scratchDir string) error {
-	session.sh.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") //xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
+	session.sh.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") // xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
 	if appBinding.Spec.ClientConfig.CABundle != nil {
 		if err := ioutil.WriteFile(filepath.Join(scratchDir, ESCACertFile), appBinding.Spec.ClientConfig.CABundle, os.ModePerm); err != nil {
 			return err
@@ -141,6 +141,7 @@ func (opt esOptions) waitForDBReady(appBinding *appcatalog.AppBinding) error {
 	klog.Infoln("Performing multielasticdump on", hostname)
 	return nil
 }
+
 func clearDir(dir string) error {
 	if err := os.RemoveAll(dir); err != nil {
 		return fmt.Errorf("unable to clean datadir: %v. Reason: %v", dir, err)
@@ -160,5 +161,5 @@ func writeAuthFile(filename string, cred *core.Secret) error {
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthUsernameKey, ESUser)),
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthPasswordKey, ESPassword)),
 	)
-	return ioutil.WriteFile(filename, []byte(authKeys), 0400) // only redable to owner
+	return ioutil.WriteFile(filename, []byte(authKeys), 0o400) // only redable to owner
 }
