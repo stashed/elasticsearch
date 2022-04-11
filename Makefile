@@ -43,7 +43,7 @@ else
 	endif
 endif
 
-RESTIC_VER       := 0.13.0
+RESTIC_VER       := 0.13.1
 
 ###
 ### These variables should not need tweaking.
