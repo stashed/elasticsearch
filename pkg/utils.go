@@ -53,14 +53,15 @@ type esOptions struct {
 	stashClient   stash.Interface
 	catalogClient appcatalog_cs.Interface
 
-	namespace         string
-	backupSessionName string
-	appBindingName    string
-	esArgs            string
-	interimDataDir    string
-	outputDir         string
-	storageSecret     kmapi.ObjectReference
-	waitTimeout       int32
+	namespace           string
+	backupSessionName   string
+	appBindingName      string
+	appBindingNamespace string
+	esArgs              string
+	interimDataDir      string
+	outputDir           string
+	storageSecret       kmapi.ObjectReference
+	waitTimeout         int32
 
 	setupOptions   restic.SetupOptions
 	backupOptions  restic.BackupOptions
