@@ -37,9 +37,9 @@ RUN set -x \
 
 # Use forked version of elasticsearch-dump.
 # It fixes NOT_FOUND error when Elasticsearch returns 404 response code.
-# Ref: https://github.com/stashed/elasticsearch-dump/commit/88ffff07568743344dcfed9f51c45921e6712e2d
+# Ref: https://github.com/stashed/elasticsearch-dump/commit/2f837aea4684e9f51cd50494ee404da2b4fcf9e5
 RUN npm config set unsafe-perm true \
-  && npm install -g https://github.com/stashed/elasticsearch-dump#88ffff07568743344dcfed9f51c45921e6712e2d
+  && npm install -g https://github.com/stashed/elasticsearch-dump#2f837aea4684e9f51cd50494ee404da2b4fcf9e5
 
 COPY --from=0 restic /bin/restic
 COPY bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
