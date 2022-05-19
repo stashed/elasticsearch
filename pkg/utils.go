@@ -162,5 +162,5 @@ func writeAuthFile(filename string, cred *core.Secret) error {
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthUsernameKey, ESUser)),
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthPasswordKey, ESPassword)),
 	)
-	return ioutil.WriteFile(filename, []byte(authKeys), 0o400) // only redable to owner
+	return ioutil.WriteFile(filename, []byte(authKeys), 0o400) // only readable to owner
 }
