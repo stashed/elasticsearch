@@ -29,7 +29,6 @@ import (
 	"gomodules.xyz/flags"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	appcatalog "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
@@ -65,6 +64,8 @@ func NewCmdRestore() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			opt.config = config
+
 			opt.kubeClient, err = kubernetes.NewForConfig(config)
 			if err != nil {
 				return err
@@ -81,7 +82,7 @@ func NewCmdRestore() *cobra.Command {
 				Namespace:  opt.appBindingNamespace,
 			}
 			var restoreOutput *restic.RestoreOutput
-			restoreOutput, err = opt.restoreElasticsearch(targetRef, config)
+			restoreOutput, err = opt.restoreElasticsearch(targetRef)
 			if err != nil {
 				restoreOutput = &restic.RestoreOutput{
 					RestoreTargetStatus: api_v1beta1.RestoreMemberStatus{
@@ -134,9 +135,9 @@ func NewCmdRestore() *cobra.Command {
 	return cmd
 }
 
-func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef, config *restclient.Config) (*restic.RestoreOutput, error) {
+func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*restic.RestoreOutput, error) {
 	var err error
-	err = license.CheckLicenseEndpoint(config, licenseApiService, SupportedProducts)
+	err = license.CheckLicenseEndpoint(opt.config, licenseApiService, SupportedProducts)
 	if err != nil {
 		return nil, err
 	}
