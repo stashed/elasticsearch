@@ -19,13 +19,14 @@ package pkg
 import (
 	"context"
 	"fmt"
+	license "go.bytebuilders.dev/license-verifier/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"path/filepath"
 
 	api_v1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
 	"stash.appscode.dev/apimachinery/pkg/restic"
 
 	"github.com/spf13/cobra"
-	license "go.bytebuilders.dev/license-verifier/kubernetes"
 	"gomodules.xyz/flags"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -64,10 +65,6 @@ func NewCmdRestore() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			err = license.CheckLicenseEndpoint(config, licenseApiService, SupportedProducts)
-			if err != nil {
-				return err
-			}
 			opt.kubeClient, err = kubernetes.NewForConfig(config)
 			if err != nil {
 				return err
@@ -84,7 +81,7 @@ func NewCmdRestore() *cobra.Command {
 				Namespace:  opt.appBindingNamespace,
 			}
 			var restoreOutput *restic.RestoreOutput
-			restoreOutput, err = opt.restoreElasticsearch(targetRef)
+			restoreOutput, err = opt.restoreElasticsearch(targetRef, config)
 			if err != nil {
 				restoreOutput = &restic.RestoreOutput{
 					RestoreTargetStatus: api_v1beta1.RestoreMemberStatus{
@@ -137,8 +134,13 @@ func NewCmdRestore() *cobra.Command {
 	return cmd
 }
 
-func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*restic.RestoreOutput, error) {
+func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef, config *restclient.Config) (*restic.RestoreOutput, error) {
 	var err error
+	err = license.CheckLicenseEndpoint(config, licenseApiService, SupportedProducts)
+	if err != nil {
+		return nil, err
+	}
+
 	opt.setupOptions.StorageSecret, err = opt.kubeClient.CoreV1().Secrets(opt.storageSecret.Namespace).Get(context.TODO(), opt.storageSecret.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
