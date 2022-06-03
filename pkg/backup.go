@@ -19,7 +19,6 @@ package pkg
 import (
 	"context"
 	"fmt"
-	license "go.bytebuilders.dev/license-verifier/kubernetes"
 	"path/filepath"
 	"time"
 
@@ -29,6 +28,7 @@ import (
 	api_util "stash.appscode.dev/apimachinery/pkg/util"
 
 	"github.com/spf13/cobra"
+	license "go.bytebuilders.dev/license-verifier/kubernetes"
 	"gomodules.xyz/flags"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"

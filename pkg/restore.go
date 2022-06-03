@@ -19,17 +19,17 @@ package pkg
 import (
 	"context"
 	"fmt"
-	license "go.bytebuilders.dev/license-verifier/kubernetes"
-	restclient "k8s.io/client-go/rest"
 	"path/filepath"
 
 	api_v1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
 	"stash.appscode.dev/apimachinery/pkg/restic"
 
 	"github.com/spf13/cobra"
+	license "go.bytebuilders.dev/license-verifier/kubernetes"
 	"gomodules.xyz/flags"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 	appcatalog "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
