@@ -36,7 +36,7 @@ RUN set -x \
   && apk add --update --no-cache bash ca-certificates curl git
 
 RUN npm config set unsafe-perm true \
-  && npm install -g https://github.com/stashed/elasticsearch-dump#88ffff07568743344dcfed9f51c45921e6712e2d
+  && npm install -g https://github.com/stashed/elasticsearch-dump#2932ffdcae8e13e4c43f410bf410e2f83c8d8b6b
 
 COPY --from=0 /restic /bin/restic
 COPY bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
