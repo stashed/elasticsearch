@@ -33,6 +33,7 @@ import (
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	kmapi "kmodules.xyz/client-go/api/v1"
 	meta_util "kmodules.xyz/client-go/meta"
@@ -66,6 +67,7 @@ type esOptions struct {
 	setupOptions   restic.SetupOptions
 	backupOptions  restic.BackupOptions
 	restoreOptions restic.RestoreOptions
+	config         *restclient.Config
 }
 type sessionWrapper struct {
 	sh  *shell.Session
