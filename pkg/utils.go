@@ -19,7 +19,6 @@ package pkg
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -113,7 +112,7 @@ func (session *sessionWrapper) setUserArgs(args string) {
 func (session *sessionWrapper) setTLSParameters(appBinding *appcatalog.AppBinding, scratchDir string) error {
 	session.sh.SetEnv("NODE_TLS_REJECT_UNAUTHORIZED", "0") // xref: https://github.com/taskrabbit/elasticsearch-dump#bypassing-self-sign-certificate-errors
 	if appBinding.Spec.ClientConfig.CABundle != nil {
-		if err := ioutil.WriteFile(filepath.Join(scratchDir, ESCACertFile), appBinding.Spec.ClientConfig.CABundle, os.ModePerm); err != nil {
+		if err := os.WriteFile(filepath.Join(scratchDir, ESCACertFile), appBinding.Spec.ClientConfig.CABundle, os.ModePerm); err != nil {
 			return err
 		}
 		session.cmd.Args = append(session.cmd.Args, fmt.Sprintf("--ca-input=%v", filepath.Join(scratchDir, ESCACertFile)))
@@ -164,5 +163,5 @@ func writeAuthFile(filename string, cred *core.Secret) error {
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthUsernameKey, ESUser)),
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthPasswordKey, ESPassword)),
 	)
-	return ioutil.WriteFile(filename, []byte(authKeys), 0o400) // only readable to owner
+	return os.WriteFile(filename, []byte(authKeys), 0o400) // only readable to owner
 }
