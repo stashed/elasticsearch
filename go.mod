@@ -13,10 +13,10 @@ require (
 	k8s.io/apimachinery v0.25.1
 	k8s.io/client-go v0.25.1
 	k8s.io/klog/v2 v2.80.1
-	kmodules.xyz/client-go v0.25.2
+	kmodules.xyz/client-go v0.25.12
 	kmodules.xyz/custom-resources v0.25.0
 	kmodules.xyz/offshoot-api v0.25.0
-	stash.appscode.dev/apimachinery v0.22.1-0.20220917042332-522f4e18711d
+	stash.appscode.dev/apimachinery v0.24.0
 )
 
 require (
@@ -62,11 +62,11 @@ require (
 	go.bytebuilders.dev/license-proxyserver v0.0.2-0.20220917052300-e49b09065bec // indirect
 	go.bytebuilders.dev/license-verifier v0.12.0 // indirect
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
-	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
+	golang.org/x/net v0.4.1-0.20221210045730-e1ec361d0b39 // indirect
 	golang.org/x/oauth2 v0.0.0-20220223155221-ee480838109b // indirect
-	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/term v0.3.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
 	gomodules.xyz/clock v0.0.0-20200817085942-06523dba733f // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
@@ -83,8 +83,9 @@ require (
 	k8s.io/apiserver v0.25.1 // indirect
 	k8s.io/kube-aggregator v0.25.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803162953-67bda5d908f1 // indirect
-	k8s.io/utils v0.0.0-20220728103510-ee6ede2d64ed // indirect
-	kmodules.xyz/objectstore-api v0.25.0 // indirect
+	k8s.io/utils v0.0.0-20220823124924-e9cbc92d1a73 // indirect
+	kmodules.xyz/apiversion v0.2.0 // indirect
+	kmodules.xyz/objectstore-api v0.25.1-0.20221104003322-f0289b5b6ca2 // indirect
 	kmodules.xyz/prober v0.25.0 // indirect
 	sigs.k8s.io/controller-runtime v0.13.0 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
