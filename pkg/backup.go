@@ -19,11 +19,14 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
+	"stash.appscode.dev/apimachinery/apis"
 	api_v1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
 	stash "stash.appscode.dev/apimachinery/client/clientset/versioned"
+	"stash.appscode.dev/apimachinery/pkg/invoker"
 	"stash.appscode.dev/apimachinery/pkg/restic"
 	api_util "stash.appscode.dev/apimachinery/pkg/util"
 
@@ -34,6 +37,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
+	meta_util "kmodules.xyz/client-go/meta"
 	appcatalog "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	appcatalog_cs "kmodules.xyz/custom-resources/client/clientset/versioned"
 	v1 "kmodules.xyz/offshoot-api/api/v1"
@@ -235,6 +239,9 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 		return nil, err
 	}
 
+	if err := opt.dumpPVCStorageLimit(targetRef); err != nil {
+		return nil, fmt.Errorf("failed to dump pvc storage limit info %w", err)
+	}
 	// dumped data has been stored in the interim data dir. Now, we will backup this directory using Stash.
 	opt.backupOptions.BackupPaths = []string{opt.interimDataDir}
 
@@ -243,6 +250,41 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 	if err != nil {
 		return nil, err
 	}
-
 	return resticWrapper.RunBackup(opt.backupOptions, targetRef)
+}
+
+func (opt *esOptions) dumpPVCStorageLimit(targetRef api_v1beta1.TargetRef) error {
+	bs, err := opt.stashClient.StashV1beta1().BackupSessions(opt.namespace).Get(context.TODO(), opt.backupSessionName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	bi, err := invoker.NewBackupInvoker(opt.stashClient, bs.Spec.Invoker.Kind, bs.Spec.Invoker.Name, opt.namespace)
+	if err != nil {
+		return err
+	}
+
+	var pvcName string
+	for _, info := range bi.GetTargetInfo() {
+		if info.Target != nil && targetMatched(info.Target.Ref, targetRef.Kind, targetRef.Name, targetRef.Namespace) {
+			if info.InterimVolumeTemplate == nil {
+				return nil
+			}
+			pvcName = meta_util.ValidNameWithPrefix(opt.backupSessionName, info.InterimVolumeTemplate.Name)
+		}
+	}
+
+	klog.Infoln("Dumping pvc storage limit info")
+	pvc, err := opt.kubeClient.CoreV1().PersistentVolumeClaims(opt.namespace).Get(context.TODO(), pvcName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	storageSize := pvc.Spec.Resources.Requests.Storage().String()
+
+	// Write PVC storage limit info to file
+	return os.WriteFile(filepath.Join(opt.interimDataDir, apis.ESMetaFile), []byte(storageSize), os.ModePerm)
+}
+
+func targetMatched(tref api_v1beta1.TargetRef, expectedKind, expectedName, expectedNamespace string) bool {
+	return tref.Kind == expectedKind && tref.Namespace == expectedNamespace && tref.Name == expectedName
 }
