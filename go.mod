@@ -13,10 +13,10 @@ require (
 	k8s.io/apimachinery v0.25.3
 	k8s.io/client-go v0.25.1
 	k8s.io/klog/v2 v2.80.1
-	kmodules.xyz/client-go v0.25.19
+	kmodules.xyz/client-go v0.25.23
 	kmodules.xyz/custom-resources v0.25.0
-	kmodules.xyz/offshoot-api v0.25.0
-	stash.appscode.dev/apimachinery v0.29.0
+	kmodules.xyz/offshoot-api v0.25.3
+	stash.appscode.dev/apimachinery v0.29.1-0.20230529131221-1e979c48da10
 )
 
 require (
@@ -69,7 +69,7 @@ require (
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
 	gomodules.xyz/clock v0.0.0-20200817085942-06523dba733f // indirect
-	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
+	gomodules.xyz/jsonpatch/v2 v2.3.0 // indirect
 	gomodules.xyz/mergo v0.3.13 // indirect
 	gomodules.xyz/pointer v0.1.0 // indirect
 	gomodules.xyz/sets v0.2.1 // indirect
