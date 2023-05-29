@@ -19,8 +19,10 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
+	"stash.appscode.dev/apimachinery/apis"
 	api_v1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
 	"stash.appscode.dev/apimachinery/pkg/restic"
 
@@ -211,9 +213,13 @@ func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*re
 		return nil, err
 	}
 
+	// delete the metadata file as it is not required for restoring the dumps
+	if err := clearFile(filepath.Join(opt.interimDataDir, apis.ESMetaFile)); err != nil {
+		return nil, err
+	}
+
 	// run separate shell to restore indices
 	// klog.Infoln("Performing multielasticdump on", hostname)
-
 	session.sh.ShowCMD = false
 	session.setUserArgs(opt.esArgs)
 	session.sh.Command(session.cmd.Name, session.cmd.Args...) // xref: multielasticdump: https://github.com/taskrabbit/elasticsearch-dump#multielasticdump
@@ -222,4 +228,13 @@ func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*re
 		return nil, err
 	}
 	return restoreOutput, nil
+}
+
+func clearFile(filepath string) error {
+	if _, err := os.Stat(filepath); err == nil {
+		if err := os.Remove(filepath); err != nil {
+			return fmt.Errorf("unable to clean file: %v. Reason: %v", filepath, err)
+		}
+	}
+	return nil
 }
