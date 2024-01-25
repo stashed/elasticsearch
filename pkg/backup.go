@@ -19,6 +19,7 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -140,6 +141,7 @@ func NewCmdBackup() *cobra.Command {
 
 	cmd.Flags().StringVar(&opt.backupOptions.Host, "hostname", opt.backupOptions.Host, "Name of the host machine")
 	cmd.Flags().StringVar(&opt.interimDataDir, "interim-data-dir", opt.interimDataDir, "Directory where the targeted data will be stored temporarily before uploading to the backend.")
+	cmd.Flags().BoolVar(&opt.enableDashboard, "enable-dashboard-backup", opt.enableDashboard, "Specify whether to enable kibana dashboard backup")
 
 	cmd.Flags().Int64Var(&opt.backupOptions.RetentionPolicy.KeepLast, "retention-keep-last", opt.backupOptions.RetentionPolicy.KeepLast, "Specify value for retention strategy")
 	cmd.Flags().Int64Var(&opt.backupOptions.RetentionPolicy.KeepHourly, "retention-keep-hourly", opt.backupOptions.RetentionPolicy.KeepHourly, "Specify value for retention strategy")
@@ -242,6 +244,11 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 	if err := opt.dumpPVCStorageLimit(targetRef); err != nil {
 		return nil, fmt.Errorf("failed to dump pvc storage limit info %w", err)
 	}
+
+	if err = opt.dumpDashboardObjects(appBinding); err != nil {
+		return nil, fmt.Errorf("failed to dump kibana dashboard %w", err)
+	}
+
 	// dumped data has been stored in the interim data dir. Now, we will backup this directory using Stash.
 	opt.backupOptions.BackupPaths = []string{opt.interimDataDir}
 
@@ -287,4 +294,27 @@ func (opt *esOptions) dumpPVCStorageLimit(targetRef api_v1beta1.TargetRef) error
 
 func targetMatched(tref api_v1beta1.TargetRef, expectedKind, expectedName, expectedNamespace string) bool {
 	return tref.Kind == expectedKind && tref.Namespace == expectedNamespace && tref.Name == expectedName
+}
+
+func (opt *esOptions) dumpDashboardObjects(appBinding *appcatalog.AppBinding) error {
+	if !opt.enableDashboard {
+		return nil
+	}
+
+	dashboardClient, err := opt.getDashboardClient(appBinding)
+	if err != nil {
+		return err
+	}
+
+	response, err := dashboardClient.ExportSavedObjects()
+	if err != nil {
+		return err
+	}
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(filepath.Join(opt.interimDataDir, "kibana.ndjson"), data, os.ModePerm)
 }
