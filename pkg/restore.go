@@ -19,6 +19,8 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -131,6 +133,7 @@ func NewCmdRestore() *cobra.Command {
 	cmd.Flags().StringVar(&opt.restoreOptions.SourceHost, "source-hostname", opt.restoreOptions.SourceHost, "Name of the host whose data will be restored")
 	cmd.Flags().StringSliceVar(&opt.restoreOptions.Snapshots, "snapshot", opt.restoreOptions.Snapshots, "Snapshots to restore")
 	cmd.Flags().StringVar(&opt.interimDataDir, "interim-data-dir", opt.interimDataDir, "Directory where the restored data will be stored temporarily before injecting into the desired database.")
+	cmd.Flags().BoolVar(&opt.enableDashboard, "enable-dashboard-restore", opt.enableDashboard, "Specify whether to enable kibana dashboard restore")
 
 	cmd.Flags().StringVar(&opt.outputDir, "output-dir", opt.outputDir, "Directory where output.json file will be written (keep empty if you don't need to write output in file)")
 
@@ -218,6 +221,15 @@ func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*re
 		return nil, err
 	}
 
+	if err = opt.restoreDashboardObjects(appBinding); err != nil {
+		return nil, fmt.Errorf("failed to restore kibana dashboard %w", err)
+	}
+
+	// delete the metadata file as it is not required for restoring the dumps
+	if err := clearFile(filepath.Join(opt.interimDataDir, "kibana.ndjson")); err != nil {
+		return nil, err
+	}
+
 	// run separate shell to restore indices
 	// klog.Infoln("Performing multielasticdump on", hostname)
 	session.sh.ShowCMD = false
@@ -236,5 +248,32 @@ func clearFile(filepath string) error {
 			return fmt.Errorf("unable to clean file: %v. Reason: %v", filepath, err)
 		}
 	}
+	return nil
+}
+
+func (opt *esOptions) restoreDashboardObjects(appBinding *appcatalog.AppBinding) error {
+	if !opt.enableDashboard {
+		return nil
+	}
+
+	dashboardClient, err := opt.getDashboardClient(appBinding)
+	if err != nil {
+		return err
+	}
+
+	response, err := dashboardClient.ImportSavedObjects(filepath.Join(opt.interimDataDir, "kibana.ndjson"))
+	if err != nil {
+		return err
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	if response.Code != http.StatusOK {
+		return fmt.Errorf("failed to import kibana saved objects %s", string(body))
+	}
+
 	return nil
 }
