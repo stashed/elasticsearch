@@ -28,12 +28,12 @@ import (
 	"k8s.io/klog/v2"
 )
 
-type EDClientV7 struct {
+type OSClient struct {
 	Client *resty.Client
 	Config *Config
 }
 
-func (h *EDClientV7) GetHealthStatus() (*Health, error) {
+func (h *OSClient) GetHealthStatus() (*Health, error) {
 	req := h.Client.R().SetDoNotParseResponse(true)
 	res, err := req.Get(h.Config.api)
 	if err != nil {
@@ -57,7 +57,7 @@ func (h *EDClientV7) GetHealthStatus() (*Health, error) {
 
 // GetStateFromHealthResponse parse health response in json from server and
 // return overall status of the server
-func (h *EDClientV7) GetStateFromHealthResponse(health *Health) (esapi.DashboardServerState, error) {
+func (h *OSClient) GetStateFromHealthResponse(health *Health) (esapi.DashboardServerState, error) {
 	resStatus := health.ConnectionResponse
 
 	defer func(Body io.ReadCloser) {
@@ -107,14 +107,14 @@ func (h *EDClientV7) GetStateFromHealthResponse(health *Health) (esapi.Dashboard
 	return esapi.DashboardServerState(health.OverallState), nil
 }
 
-func (h *EDClientV7) ExportSavedObjects() (*Response, error) {
+func (h *OSClient) ExportSavedObjects() (*Response, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
 		SetHeaders(map[string]string{
 			"Content-Type": "application/json",
-			"kbn-xsrf":     "true",
+			"osd-xsrf":     "true",
 		}).
-		SetBody([]byte(SavedObjectsReqBodyES))
+		SetBody([]byte(SavedObjectsReqBodyOS))
 	res, err := req.Post(SavedObjectsExportURL)
 	if err != nil {
 		klog.Error(err, "Failed to send http request")
@@ -127,10 +127,10 @@ func (h *EDClientV7) ExportSavedObjects() (*Response, error) {
 	}, nil
 }
 
-func (h *EDClientV7) ImportSavedObjects(filepath string) (*Response, error) {
+func (h *OSClient) ImportSavedObjects(filepath string) (*Response, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
-		SetHeader("kbn-xsrf", "true").
+		SetHeader("osd-xsrf", "true").
 		SetFile("file", filepath).
 		SetQueryParam("overwrite", "true")
 	res, err := req.Post(SavedObjectsImportURL)

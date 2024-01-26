@@ -222,11 +222,11 @@ func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*re
 	}
 
 	if err = opt.restoreDashboardObjects(appBinding); err != nil {
-		return nil, fmt.Errorf("failed to restore kibana dashboard %w", err)
+		return nil, fmt.Errorf("failed to restore dashboard objects %w", err)
 	}
 
 	// delete the metadata file as it is not required for restoring the dumps
-	if err := clearFile(filepath.Join(opt.interimDataDir, "kibana.ndjson")); err != nil {
+	if err := clearFile(filepath.Join(opt.interimDataDir, DashboardObjectsFile)); err != nil {
 		return nil, err
 	}
 
@@ -261,7 +261,7 @@ func (opt *esOptions) restoreDashboardObjects(appBinding *appcatalog.AppBinding)
 		return err
 	}
 
-	response, err := dashboardClient.ImportSavedObjects(filepath.Join(opt.interimDataDir, "kibana.ndjson"))
+	response, err := dashboardClient.ImportSavedObjects(filepath.Join(opt.interimDataDir, DashboardObjectsFile))
 	if err != nil {
 		return err
 	}
@@ -272,7 +272,7 @@ func (opt *esOptions) restoreDashboardObjects(appBinding *appcatalog.AppBinding)
 	}
 
 	if response.Code != http.StatusOK {
-		return fmt.Errorf("failed to import kibana saved objects %s", string(body))
+		return fmt.Errorf("failed to import dashboard saved objects %s", string(body))
 	}
 
 	return nil
