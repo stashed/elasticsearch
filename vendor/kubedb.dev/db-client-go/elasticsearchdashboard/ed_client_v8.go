@@ -112,7 +112,7 @@ func (h *EDClientV8) ExportSavedObjects() (*Response, error) {
 			"Content-Type": "application/json",
 			"kbn-xsrf":     "true",
 		}).
-		SetBody([]byte(SavedObjectsReqBody))
+		SetBody([]byte(SavedObjectsReqBodyES))
 	res, err := req.Post(SavedObjectsExportURL)
 	if err != nil {
 		klog.Error(err, "Failed to send http request")

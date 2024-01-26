@@ -170,9 +170,8 @@ func (o *KubeDBClientBuilder) GetElasticsearchDashboardClient() (*Client, error)
 	}
 
 	switch {
-	// for Elasticsearch 7.x.x and OpenSearch 1.x.x
-	case (config.dbVersionInfo.AuthPlugin == catalog.ElasticsearchAuthPluginXpack && version.Major() <= 7) ||
-		(config.dbVersionInfo.AuthPlugin == catalog.ElasticsearchAuthPluginOpenSearch && (version.Major() == 1 || version.Major() == 2)):
+	// for Elasticsearch 7.x.x
+	case config.dbVersionInfo.AuthPlugin == catalog.ElasticsearchAuthPluginXpack && version.Major() == 7:
 		newClient := resty.New()
 		newClient.SetTransport(config.transport).SetScheme(config.connectionScheme).SetBaseURL(config.host)
 		newClient.SetHeader("Accept", "application/json")
@@ -195,6 +194,20 @@ func (o *KubeDBClientBuilder) GetElasticsearchDashboardClient() (*Client, error)
 
 		return &Client{
 			&EDClientV8{
+				Client: newClient,
+				Config: &config,
+			},
+		}, nil
+
+	case config.dbVersionInfo.AuthPlugin == catalog.ElasticsearchAuthPluginOpenSearch:
+		newClient := resty.New()
+		newClient.SetTransport(config.transport).SetScheme(config.connectionScheme).SetBaseURL(config.host)
+		newClient.SetHeader("Accept", "application/json")
+		newClient.SetBasicAuth(config.username, config.password)
+		newClient.SetTimeout(time.Second * 30)
+
+		return &Client{
+			&OSClient{
 				Client: newClient,
 				Config: &config,
 			},
