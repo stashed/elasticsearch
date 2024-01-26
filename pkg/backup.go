@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -246,7 +247,7 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 	}
 
 	if err = opt.dumpDashboardObjects(appBinding); err != nil {
-		return nil, fmt.Errorf("failed to dump kibana dashboard %w", err)
+		return nil, fmt.Errorf("failed to dump dashboard objects %w", err)
 	}
 
 	// dumped data has been stored in the interim data dir. Now, we will backup this directory using Stash.
@@ -311,10 +312,14 @@ func (opt *esOptions) dumpDashboardObjects(appBinding *appcatalog.AppBinding) er
 		return err
 	}
 
-	data, err := io.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(opt.interimDataDir, "kibana.ndjson"), data, os.ModePerm)
+	if response.Code != http.StatusOK {
+		return fmt.Errorf("failed to export dashboard saved objects %s", string(body))
+	}
+
+	return os.WriteFile(filepath.Join(opt.interimDataDir, DashboardObjectsFile), body, os.ModePerm)
 }

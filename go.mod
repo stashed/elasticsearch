@@ -17,7 +17,7 @@ require (
 	kmodules.xyz/custom-resources v0.29.0
 	kmodules.xyz/offshoot-api v0.29.0
 	kubedb.dev/apimachinery v0.41.0-beta.1.0.20240124061503-ce4799bb0e5c
-	kubedb.dev/db-client-go v0.0.9-0.20240125100355-dd2b92a0910f
+	kubedb.dev/db-client-go v0.0.9-0.20240126103627-22edae9f6b92
 	sigs.k8s.io/controller-runtime v0.16.3
 	stash.appscode.dev/apimachinery v0.32.1-0.20240118085630-4c06ed8c04a7
 )

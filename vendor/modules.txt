@@ -754,7 +754,7 @@ kubedb.dev/apimachinery/apis/kubedb
 kubedb.dev/apimachinery/apis/kubedb/v1alpha2
 kubedb.dev/apimachinery/crds
 kubedb.dev/apimachinery/pkg/validator
-# kubedb.dev/db-client-go v0.0.9-0.20240125100355-dd2b92a0910f
+# kubedb.dev/db-client-go v0.0.9-0.20240126103627-22edae9f6b92
 ## explicit; go 1.21.5
 kubedb.dev/db-client-go/elasticsearchdashboard
 # sigs.k8s.io/controller-runtime v0.16.3 => github.com/kmodules/controller-runtime v0.16.1-0.20231224083233-bead154270db

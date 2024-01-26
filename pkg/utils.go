@@ -50,11 +50,12 @@ import (
 )
 
 const (
-	ESUser              = "ADMIN_USERNAME"
-	ESPassword          = "ADMIN_PASSWORD"
-	MultiElasticDumpCMD = "multielasticdump"
-	ESCACertFile        = "root.pem"
-	ESAuthFile          = "auth.txt"
+	ESUser               = "ADMIN_USERNAME"
+	ESPassword           = "ADMIN_PASSWORD"
+	MultiElasticDumpCMD  = "multielasticdump"
+	ESCACertFile         = "root.pem"
+	ESAuthFile           = "auth.txt"
+	DashboardObjectsFile = "dashboard.ndjson"
 )
 
 type esOptions struct {
