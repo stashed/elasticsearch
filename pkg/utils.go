@@ -31,21 +31,31 @@ import (
 	shell "gomodules.xyz/go-sh"
 	core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 	kmapi "kmodules.xyz/client-go/api/v1"
 	meta_util "kmodules.xyz/client-go/meta"
 	appcatalog "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	appcatalog_cs "kmodules.xyz/custom-resources/client/clientset/versioned"
+	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
+	esapi "kubedb.dev/apimachinery/apis/elasticsearch/v1alpha1"
+	kubedbapi "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
+	es_dashboard "kubedb.dev/db-client-go/elasticsearchdashboard"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 )
 
 const (
-	ESUser              = "ADMIN_USERNAME"
-	ESPassword          = "ADMIN_PASSWORD"
-	MultiElasticDumpCMD = "multielasticdump"
-	ESCACertFile        = "root.pem"
-	ESAuthFile          = "auth.txt"
+	ESUser               = "ADMIN_USERNAME"
+	ESPassword           = "ADMIN_PASSWORD"
+	MultiElasticDumpCMD  = "multielasticdump"
+	ESCACertFile         = "root.pem"
+	ESAuthFile           = "auth.txt"
+	DashboardObjectsFile = "dashboard.ndjson"
 )
 
 type esOptions struct {
@@ -59,6 +69,7 @@ type esOptions struct {
 	appBindingNamespace string
 	esArgs              string
 	interimDataDir      string
+	enableDashboard     bool
 	outputDir           string
 	storageSecret       kmapi.ObjectReference
 	waitTimeout         int32
@@ -165,4 +176,120 @@ func writeAuthFile(filename string, cred *core.Secret) error {
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthPasswordKey, ESPassword)),
 	)
 	return os.WriteFile(filename, []byte(authKeys), 0o400) // only readable to owner
+}
+
+func newRuntimeClient(cfg *rest.Config) (client.Client, error) {
+	scheme := runtime.NewScheme()
+	utilruntime.Must(core.AddToScheme(scheme))
+	utilruntime.Must(esapi.AddToScheme(scheme))
+	utilruntime.Must(kubedbapi.AddToScheme(scheme))
+
+	hc, err := rest.HTTPClientFor(cfg)
+	if err != nil {
+		return nil, err
+	}
+	mapper, err := apiutil.NewDynamicRESTMapper(cfg, hc)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.New(cfg, client.Options{
+		Scheme: scheme,
+		Mapper: mapper,
+	})
+}
+
+func getElasticSearchDashboard(klient client.Client, appBinding *appcatalog.AppBinding) (*esapi.ElasticsearchDashboard, error) {
+	dashboards := &esapi.ElasticsearchDashboardList{}
+	opts := []client.ListOption{client.InNamespace(appBinding.Namespace)}
+	if err := klient.List(context.TODO(), dashboards, opts...); err != nil {
+		return nil, err
+	}
+
+	for _, dashboard := range dashboards.Items {
+		if dashboard.Spec.DatabaseRef != nil {
+			if dashboard.Spec.DatabaseRef.Name == appBinding.Name {
+				return &dashboard, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("no elasticsearch dashboard found")
+}
+
+func getElasticSearch(klient client.Client, appBinding *appcatalog.AppBinding) (*kubedbapi.Elasticsearch, error) {
+	es := &kubedbapi.Elasticsearch{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      appBinding.Name,
+			Namespace: appBinding.Namespace,
+		},
+	}
+
+	if err := klient.Get(context.TODO(), client.ObjectKeyFromObject(es), es); err != nil {
+		return nil, err
+	}
+
+	return es, nil
+}
+
+func getSecret(klient client.Client, obj kmapi.ObjectReference) (*core.Secret, error) {
+	sec := &core.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      obj.Name,
+			Namespace: obj.Namespace,
+		},
+	}
+
+	if err := klient.Get(context.TODO(), client.ObjectKeyFromObject(sec), sec); err != nil {
+		return nil, err
+	}
+
+	return sec, nil
+}
+
+func getVersionInfo(es *kubedbapi.Elasticsearch, appBinding *appcatalog.AppBinding) *es_dashboard.DbVersionInfo {
+	authPlugin := catalog.ElasticsearchAuthPluginOpenSearch
+	segments := strings.Split(es.Spec.Version, "-")
+	if segments[0] == "xpack" {
+		authPlugin = catalog.ElasticsearchAuthPluginXpack
+	}
+	return &es_dashboard.DbVersionInfo{
+		Name:       es.Spec.Version,
+		Version:    appBinding.Spec.Version,
+		AuthPlugin: authPlugin,
+	}
+}
+
+func (opt esOptions) getDashboardClient(appBinding *appcatalog.AppBinding) (*es_dashboard.Client, error) {
+	klient, err := newRuntimeClient(opt.config)
+	if err != nil {
+		return nil, err
+	}
+
+	esDashboard, err := getElasticSearchDashboard(klient, appBinding)
+	if err != nil {
+		return nil, err
+	}
+
+	es, err := getElasticSearch(klient, appBinding)
+	if err != nil {
+		return nil, err
+	}
+
+	sec, err := getSecret(klient, kmapi.ObjectReference{
+		Name:      es.Spec.AuthSecret.Name,
+		Namespace: es.Namespace,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	versionInfo := getVersionInfo(es, appBinding)
+
+	return es_dashboard.NewKubeDBClientBuilder(klient, esDashboard).
+		WithContext(context.TODO()).
+		WithDatabaseRef(es).
+		WithAuthSecret(sec).
+		WithDbVersionInfo(versionInfo).
+		GetElasticsearchDashboardClient()
 }
