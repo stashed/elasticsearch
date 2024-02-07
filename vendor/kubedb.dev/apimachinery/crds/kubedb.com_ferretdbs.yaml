@@ -64,17 +64,16 @@ spec:
                           namespace:
                             type: string
                           pgPort:
-                            type: string
-                        required:
-                        - name
-                        - namespace
-                        - pgPort
+                            format: int32
+                            type: integer
                         type: object
                       url:
                         type: string
                       version:
                         type: string
                     type: object
+                required:
+                - externallyManaged
                 type: object
               halted:
                 type: boolean

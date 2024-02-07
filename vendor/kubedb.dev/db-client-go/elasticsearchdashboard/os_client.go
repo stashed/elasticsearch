@@ -107,7 +107,7 @@ func (h *OSClient) GetStateFromHealthResponse(health *Health) (esapi.DashboardSe
 	return esapi.DashboardServerState(health.OverallState), nil
 }
 
-func (h *OSClient) ExportSavedObjects() (*Response, error) {
+func (h *OSClient) ExportSavedObjects(_ string) (*Response, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
 		SetHeaders(map[string]string{
@@ -127,7 +127,7 @@ func (h *OSClient) ExportSavedObjects() (*Response, error) {
 	}, nil
 }
 
-func (h *OSClient) ImportSavedObjects(filepath string) (*Response, error) {
+func (h *OSClient) ImportSavedObjects(_, filepath string) (*Response, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
 		SetHeader("osd-xsrf", "true").
@@ -143,4 +143,8 @@ func (h *OSClient) ImportSavedObjects(filepath string) (*Response, error) {
 		Code: res.StatusCode(),
 		Body: res.RawBody(),
 	}, nil
+}
+
+func (h *OSClient) ListSpaces() ([]string, error) {
+	return []string{"default"}, nil
 }
