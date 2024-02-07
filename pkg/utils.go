@@ -50,12 +50,11 @@ import (
 )
 
 const (
-	ESUser               = "ADMIN_USERNAME"
-	ESPassword           = "ADMIN_PASSWORD"
-	MultiElasticDumpCMD  = "multielasticdump"
-	ESCACertFile         = "root.pem"
-	ESAuthFile           = "auth.txt"
-	DashboardObjectsFile = "dashboard.ndjson"
+	ESUser              = "ADMIN_USERNAME"
+	ESPassword          = "ADMIN_PASSWORD"
+	MultiElasticDumpCMD = "multielasticdump"
+	ESCACertFile        = "root.pem"
+	ESAuthFile          = "auth.txt"
 )
 
 type esOptions struct {
@@ -292,4 +291,8 @@ func (opt esOptions) getDashboardClient(appBinding *appcatalog.AppBinding) (*es_
 		WithAuthSecret(sec).
 		WithDbVersionInfo(versionInfo).
 		GetElasticsearchDashboardClient()
+}
+
+func (opt esOptions) getDashboardFilePath(space string) string {
+	return filepath.Join(opt.interimDataDir, space+".ndjson")
 }

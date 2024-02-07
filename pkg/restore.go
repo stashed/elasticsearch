@@ -225,11 +225,6 @@ func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*re
 		return nil, fmt.Errorf("failed to restore dashboard objects %w", err)
 	}
 
-	// delete the metadata file as it is not required for restoring the dumps
-	if err := clearFile(filepath.Join(opt.interimDataDir, DashboardObjectsFile)); err != nil {
-		return nil, err
-	}
-
 	// run separate shell to restore indices
 	// klog.Infoln("Performing multielasticdump on", hostname)
 	session.sh.ShowCMD = false
@@ -261,18 +256,30 @@ func (opt *esOptions) restoreDashboardObjects(appBinding *appcatalog.AppBinding)
 		return err
 	}
 
-	response, err := dashboardClient.ImportSavedObjects(filepath.Join(opt.interimDataDir, DashboardObjectsFile))
+	spaces, err := dashboardClient.ListSpaces()
 	if err != nil {
 		return err
 	}
 
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
+	for _, space := range spaces {
+		response, err := dashboardClient.ImportSavedObjects(space, opt.getDashboardFilePath(space))
+		if err != nil {
+			return err
+		}
 
-	if response.Code != http.StatusOK {
-		return fmt.Errorf("failed to import dashboard saved objects %s", string(body))
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+
+		if response.Code != http.StatusOK {
+			return fmt.Errorf("failed to import dashboard saved objects %s", string(body))
+		}
+
+		// delete the dashboard file(s) as it is not required for restoring the dumps
+		if err = clearFile(opt.getDashboardFilePath(space)); err != nil {
+			return err
+		}
 	}
 
 	return nil
