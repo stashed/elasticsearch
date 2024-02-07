@@ -1015,11 +1015,54 @@ const (
 	RabbitMQVolumeTempConfig   = "temp-config"
 	RabbitMQVolumeCustomConfig = "custom-config"
 
-	RabbitMQDataDir       = "/var/lib/rabbitmq/mnesia"
-	RabbitMQPluginsDir    = "/etc/rabbitmq/"
-	RabbitMQCertDir       = "/var/private/ssl"
-	RabbitMQConfigDir     = "/config/"
-	RabbitMQTempConfigDir = "/tmp/config/"
+	RabbitMQDataDir         = "/var/lib/rabbitmq/mnesia"
+	RabbitMQConfigDir       = "/config/"
+	RabbitMQPluginsDir      = "/etc/rabbitmq/"
+	RabbitMQCertDir         = "/var/private/ssl"
+	RabbitMQTempConfigDir   = "/tmp/config/"
+	RabbitMQCustomConfigDir = "/tmp/config/custom_config/"
+
+	RabbitMQConfigVolName     = "rabbitmq-config"
+	RabbitMQPluginsVolName    = "rabbitmq-plugins"
+	RabbitMQTempConfigVolName = "temp-config"
+
+	RabbitMQContainerName          = "rabbitmq"
+	RabbitMQInitContainerName      = "rabbitmq-init"
+	RabbitMQManagementPlugin       = "rabbitmq_management"
+	RabbitMQPeerdiscoveryPlugin    = "rabbitmq_peer_discovery_k8s"
+	RabbitMQLoopBackUserKey        = "loopback_users"
+	RabbitMQLoopBackUserVal        = "none"
+	RabbitMQDefaultTCPListenerKey  = "listeners.tcp.default"
+	RabbitMQDefaultTCPListenerVal  = "5672"
+	RabbitMQQueueMasterLocatorKey  = "queue_master_locator"
+	RabbitMQQueueMasterLocatorVal  = "min-masters"
+	RabbitMQDiskFreeLimitKey       = "disk_free_limit.absolute"
+	RabbitMQDiskFreeLimitVal       = "2GB"
+	RabbitMQPartitionHandingKey    = "cluster_partition_handling"
+	RabbitMQPartitionHandingVal    = "pause_minority"
+	RabbitMQPeerDiscoveryKey       = "cluster_formation.peer_discovery_backend"
+	RabbitMQPeerDiscoveryVal       = "rabbit_peer_discovery_k8s"
+	RabbitMQK8sHostKey             = "cluster_formation.k8s.host"
+	RabbitMQK8sHostVal             = "kubernetes.default.svc.cluster.local"
+	RabbitMQK8sAddressTypeKey      = "cluster_formation.k8s.address_type"
+	RabbitMQK8sAddressTypeVal      = "hostname"
+	RabbitMQNodeCleanupWarningKey  = "cluster_formation.node_cleanup.only_log_warning"
+	RabbitMQNodeCleanupWarningVal  = "true"
+	RabbitMQLogFileLevelKey        = "log.file.level"
+	RabbitMQLogFileLevelVal        = "info"
+	RabbitMQLogConsoleKey          = "log.console"
+	RabbitMQLogConsoleVal          = "true"
+	RabbitMQLogConsoleLevelKey     = "log.console.level"
+	RabbitMQLogConsoleLevelVal     = "info"
+	RabbitMQDefaultUserKey         = "default_user"
+	RabbitMQDefaultUserVal         = "$(RABBITMQ_DEFAULT_USER)"
+	RabbitMQDefaultPasswordKey     = "default_pass"
+	RabbitMQDefaultPasswordVal     = "$(RABBITMQ_DEFAULT_PASS)"
+	RabbitMQClusterNameKey         = "cluster_name"
+	RabbitMQK8sSvcNameKey          = "cluster_formation.k8s.service_name"
+	RabbitMQConfigFileName         = "rabbitmq.conf"
+	RabbitMQEnabledPluginsFileName = "enabled_plugins"
+	RabbitMQHealthCheckerQueueName = "kubedb-system"
 )
 
 // =========================== FerretDB Constants ============================
@@ -1094,9 +1137,20 @@ var (
 		},
 	}
 
-	// DefaultResourcesElasticSearch must be used for elasticsearch
+	// DefaultResourcesCPUIntensive is for MongoDB versions >= 6
+	DefaultResourcesCPUIntensive = core.ResourceRequirements{
+		Requests: core.ResourceList{
+			core.ResourceCPU:    resource.MustParse(".800"),
+			core.ResourceMemory: resource.MustParse("1024Mi"),
+		},
+		Limits: core.ResourceList{
+			core.ResourceMemory: resource.MustParse("1024Mi"),
+		},
+	}
+
+	// DefaultResourcesMemoryIntensive must be used for elasticsearch
 	// to avoid OOMKILLED while deploying ES V8
-	DefaultResourcesElasticSearch = core.ResourceRequirements{
+	DefaultResourcesMemoryIntensive = core.ResourceRequirements{
 		Requests: core.ResourceList{
 			core.ResourceCPU:    resource.MustParse(".500"),
 			core.ResourceMemory: resource.MustParse("1.5Gi"),

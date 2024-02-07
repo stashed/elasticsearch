@@ -22,11 +22,11 @@ import (
 	"strconv"
 	"strings"
 
-	"kubedb.dev/apimachinery/apis"
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	"kubedb.dev/apimachinery/apis/kubedb"
 	"kubedb.dev/apimachinery/crds"
 
+	"github.com/Masterminds/semver/v3"
 	"gomodules.xyz/pointer"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,6 +37,7 @@ import (
 	"kmodules.xyz/client-go/apiextensions"
 	coreutil "kmodules.xyz/client-go/core/v1"
 	meta_util "kmodules.xyz/client-go/meta"
+	"kmodules.xyz/client-go/policy/secomp"
 	appcat "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	ofst "kmodules.xyz/offshoot-api/api/v2"
 )
@@ -214,7 +215,7 @@ func (d *Druid) GetMetadataStorageConnectURI(appbinding *appcat.AppBinding, meta
 }
 
 func (d *Druid) GetZKServiceHost(appbinding *appcat.AppBinding) string {
-	return appbinding.Spec.ClientConfig.Service.Name + ":" + strconv.Itoa(int(appbinding.Spec.ClientConfig.Service.Port))
+	return fmt.Sprintf("%s.%s.svc:%d", appbinding.Spec.ClientConfig.Service.Name, appbinding.Namespace, int(appbinding.Spec.ClientConfig.Service.Port))
 }
 
 func (d *Druid) AddDruidExtensionLoadList(druidExtensionLoadList string, extension string) string {
@@ -229,7 +230,7 @@ func (d *Druid) AddDruidExtensionLoadList(druidExtensionLoadList string, extensi
 }
 
 func (d *Druid) GetMetadataStorageType(metadataStorage string) DruidMetadataStorageType {
-	if metadataStorage == string(DruidMetadataStorageMySQL) {
+	if metadataStorage == string(DruidMetadataStorageMySQL) || metadataStorage == strings.ToLower(string(DruidMetadataStorageMySQL)) {
 		return DruidMetadataStorageMySQL
 	} else {
 		return DruidMetadataStoragePostgreSQL
@@ -256,10 +257,16 @@ func (d *Druid) GetDruidSegmentCacheConfig() string {
 }
 
 func (d *Druid) GetDruidStorageSize(storageSize string) string {
-	storageSize = storageSize[:len(storageSize)-1]
-	storageSize = strings.ToLower(storageSize)
+	lastTwoCharacters := storageSize[len(storageSize)-2:]
+	storageSize = storageSize[:len(storageSize)-2]
+	intSorageSize, _ := strconv.Atoi(storageSize)
 
-	return storageSize
+	if lastTwoCharacters == "Gi" {
+		intSorageSize *= 1000000000
+	} else {
+		intSorageSize *= 1000000
+	}
+	return strconv.Itoa(intSorageSize)
 }
 
 func (d *Druid) OffshootSelectors(extraSelectors ...map[string]string) map[string]string {
@@ -310,83 +317,95 @@ func (d *Druid) SetDefaults() {
 		return
 	}
 
+	version, err := semver.NewVersion(druidVersion.Spec.Version)
+	if err != nil {
+		klog.Errorf("failed to parse druid version :%s\n", err.Error())
+		return
+	}
+
 	if d.Spec.Topology != nil {
 		if d.Spec.Topology.Coordinators != nil {
 			if d.Spec.Topology.Coordinators.Replicas == nil {
 				d.Spec.Topology.Coordinators.Replicas = pointer.Int32P(1)
 			}
-
-			if d.Spec.Topology.Coordinators.PodTemplate.Spec.SecurityContext == nil {
-				d.Spec.Topology.Coordinators.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+			if version.Major() > 25 {
+				if d.Spec.Topology.Coordinators.PodTemplate.Spec.SecurityContext == nil {
+					d.Spec.Topology.Coordinators.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+				}
+				d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Coordinators.PodTemplate)
+				d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Coordinators.PodTemplate)
 			}
-			d.Spec.Topology.Coordinators.PodTemplate.Spec.SecurityContext.RunAsGroup = druidVersion.Spec.SecurityContext.RunAsUser
-			d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Coordinators.PodTemplate)
-			d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Coordinators.PodTemplate)
 		}
 		if d.Spec.Topology.Overlords != nil {
 			if d.Spec.Topology.Overlords.Replicas == nil {
 				d.Spec.Topology.Overlords.Replicas = pointer.Int32P(1)
 			}
-
-			if d.Spec.Topology.Overlords.PodTemplate.Spec.SecurityContext == nil {
-				d.Spec.Topology.Overlords.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+			if version.Major() > 25 {
+				if d.Spec.Topology.Overlords.PodTemplate.Spec.SecurityContext == nil {
+					d.Spec.Topology.Overlords.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+				}
+				d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Overlords.PodTemplate)
+				d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Overlords.PodTemplate)
 			}
-			d.Spec.Topology.Overlords.PodTemplate.Spec.SecurityContext.RunAsGroup = druidVersion.Spec.SecurityContext.RunAsUser
-			d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Overlords.PodTemplate)
-			d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Overlords.PodTemplate)
 		}
 		if d.Spec.Topology.MiddleManagers != nil {
 			if d.Spec.Topology.MiddleManagers.Replicas == nil {
 				d.Spec.Topology.MiddleManagers.Replicas = pointer.Int32P(1)
 			}
-
-			if d.Spec.Topology.MiddleManagers.PodTemplate.Spec.SecurityContext == nil {
-				d.Spec.Topology.MiddleManagers.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+			if version.Major() > 25 {
+				if d.Spec.Topology.MiddleManagers.PodTemplate.Spec.SecurityContext == nil {
+					d.Spec.Topology.MiddleManagers.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+				}
+				d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.MiddleManagers.PodTemplate)
+				d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.MiddleManagers.PodTemplate)
 			}
-			d.Spec.Topology.MiddleManagers.PodTemplate.Spec.SecurityContext.RunAsGroup = druidVersion.Spec.SecurityContext.RunAsUser
-			d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.MiddleManagers.PodTemplate)
-			d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.MiddleManagers.PodTemplate)
 		}
 		if d.Spec.Topology.Historicals != nil {
 			if d.Spec.Topology.Historicals.Replicas == nil {
 				d.Spec.Topology.Historicals.Replicas = pointer.Int32P(1)
 			}
-
-			if d.Spec.Topology.Historicals.PodTemplate.Spec.SecurityContext == nil {
-				d.Spec.Topology.Historicals.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+			if d.Spec.Version > "25.0.0" {
+				if d.Spec.Topology.Historicals.PodTemplate.Spec.SecurityContext == nil {
+					d.Spec.Topology.Historicals.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+				}
+				d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Historicals.PodTemplate)
+				d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Historicals.PodTemplate)
 			}
-			d.Spec.Topology.Historicals.PodTemplate.Spec.SecurityContext.RunAsGroup = druidVersion.Spec.SecurityContext.RunAsUser
-			d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Historicals.PodTemplate)
-			d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Historicals.PodTemplate)
 		}
 		if d.Spec.Topology.Brokers != nil {
 			if d.Spec.Topology.Brokers.Replicas == nil {
 				d.Spec.Topology.Brokers.Replicas = pointer.Int32P(1)
 			}
+			if version.Major() > 25 {
+				if d.Spec.Topology.Brokers.PodTemplate.Spec.SecurityContext == nil {
+					d.Spec.Topology.Brokers.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+				}
+				d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Brokers.PodTemplate)
+				d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Brokers.PodTemplate)
 
-			if d.Spec.Topology.Brokers.PodTemplate.Spec.SecurityContext == nil {
-				d.Spec.Topology.Brokers.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
 			}
-			d.Spec.Topology.Brokers.PodTemplate.Spec.SecurityContext.RunAsGroup = druidVersion.Spec.SecurityContext.RunAsUser
-			d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Brokers.PodTemplate)
-			d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Brokers.PodTemplate)
 		}
 		if d.Spec.Topology.Routers != nil {
 			if d.Spec.Topology.Routers.Replicas == nil {
 				d.Spec.Topology.Routers.Replicas = pointer.Int32P(1)
 			}
-
-			if d.Spec.Topology.Routers.PodTemplate.Spec.SecurityContext == nil {
-				d.Spec.Topology.Routers.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+			if version.Major() > 25 {
+				if d.Spec.Topology.Routers.PodTemplate.Spec.SecurityContext == nil {
+					d.Spec.Topology.Routers.PodTemplate.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: druidVersion.Spec.SecurityContext.RunAsUser}
+				}
+				d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Routers.PodTemplate)
+				d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Routers.PodTemplate)
 			}
-			d.Spec.Topology.Routers.PodTemplate.Spec.SecurityContext.RunAsGroup = druidVersion.Spec.SecurityContext.RunAsUser
-			d.setDefaultContainerSecurityContext(&druidVersion, &d.Spec.Topology.Routers.PodTemplate)
-			d.setDefaultInitContainerSecurityContext(&druidVersion, &d.Spec.Topology.Routers.PodTemplate)
+		}
+	}
+	if d.Spec.MetadataStorage != nil {
+		if d.Spec.MetadataStorage.Name != nil && d.Spec.MetadataStorage.Namespace == nil {
+			*d.Spec.MetadataStorage.Namespace = d.Namespace
 		}
 	}
 }
 
-func (d *Druid) setDefaultInitContainerSecurityContext(slVersion *catalog.DruidVersion, podTemplate *ofst.PodTemplateSpec) {
+func (d *Druid) setDefaultInitContainerSecurityContext(druidVersion *catalog.DruidVersion, podTemplate *ofst.PodTemplateSpec) {
 	initContainer := coreutil.GetContainerByName(podTemplate.Spec.InitContainers, DruidInitContainer)
 	if initContainer == nil {
 		initContainer = &v1.Container{
@@ -396,8 +415,7 @@ func (d *Druid) setDefaultInitContainerSecurityContext(slVersion *catalog.DruidV
 	if initContainer.SecurityContext == nil {
 		initContainer.SecurityContext = &v1.SecurityContext{}
 	}
-	apis.SetDefaultResourceLimits(&initContainer.Resources, DefaultResources)
-	d.assignDefaultContainerSecurityContext(slVersion, initContainer.SecurityContext)
+	d.assignDefaultContainerSecurityContext(druidVersion, initContainer.SecurityContext)
 	podTemplate.Spec.InitContainers = coreutil.UpsertContainer(podTemplate.Spec.InitContainers, *initContainer)
 }
 
@@ -411,29 +429,28 @@ func (d *Druid) setDefaultContainerSecurityContext(druidVersion *catalog.DruidVe
 	if container.SecurityContext == nil {
 		container.SecurityContext = &v1.SecurityContext{}
 	}
-	apis.SetDefaultResourceLimits(&container.Resources, DefaultResources)
 	d.assignDefaultContainerSecurityContext(druidVersion, container.SecurityContext)
 	podTemplate.Spec.Containers = coreutil.UpsertContainer(podTemplate.Spec.Containers, *container)
 }
 
 func (d *Druid) assignDefaultContainerSecurityContext(druidVersion *catalog.DruidVersion, sc *v1.SecurityContext) {
-	//if sc.AllowPrivilegeEscalation == nil {
-	//	sc.AllowPrivilegeEscalation = pointer.BoolP(false)
-	//}
-	//if sc.Capabilities == nil {
-	//	sc.Capabilities = &v1.Capabilities{
-	//		Drop: []v1.Capability{"ALL"},
-	//	}
-	//}
-	//if sc.RunAsNonRoot == nil {
-	//	sc.RunAsNonRoot = pointer.BoolP(true)
-	//}
-	//if sc.RunAsUser == nil {
-	//	sc.RunAsUser = druidVersion.Spec.SecurityContext.RunAsUser
-	//}
-	//if sc.SeccompProfile == nil {
-	//	sc.SeccompProfile = secomp.DefaultSeccompProfile()
-	//}
+	if sc.AllowPrivilegeEscalation == nil {
+		sc.AllowPrivilegeEscalation = pointer.BoolP(false)
+	}
+	if sc.Capabilities == nil {
+		sc.Capabilities = &v1.Capabilities{
+			Drop: []v1.Capability{"ALL"},
+		}
+	}
+	if sc.RunAsNonRoot == nil {
+		sc.RunAsNonRoot = pointer.BoolP(true)
+	}
+	if sc.RunAsUser == nil {
+		sc.RunAsUser = druidVersion.Spec.SecurityContext.RunAsUser
+	}
+	if sc.SeccompProfile == nil {
+		sc.SeccompProfile = secomp.DefaultSeccompProfile()
+	}
 }
 
 func (d *Druid) GetPersistentSecrets() []string {

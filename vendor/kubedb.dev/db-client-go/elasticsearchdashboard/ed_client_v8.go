@@ -18,7 +18,9 @@ package elasticsearchdashboard
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"net/http"
 	"strings"
 
 	esapi "kubedb.dev/apimachinery/apis/elasticsearch/v1alpha1"
@@ -105,7 +107,7 @@ func (h *EDClientV8) GetStateFromHealthResponse(health *Health) (esapi.Dashboard
 	return esapi.DashboardServerState(health.OverallState), nil
 }
 
-func (h *EDClientV8) ExportSavedObjects() (*Response, error) {
+func (h *EDClientV8) ExportSavedObjects(spaceName string) (*Response, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
 		SetHeaders(map[string]string{
@@ -113,7 +115,7 @@ func (h *EDClientV8) ExportSavedObjects() (*Response, error) {
 			"kbn-xsrf":     "true",
 		}).
 		SetBody([]byte(SavedObjectsReqBodyES))
-	res, err := req.Post(SavedObjectsExportURL)
+	res, err := req.Post("/s/" + spaceName + SavedObjectsExportURL)
 	if err != nil {
 		klog.Error(err, "Failed to send http request")
 		return nil, err
@@ -125,13 +127,13 @@ func (h *EDClientV8) ExportSavedObjects() (*Response, error) {
 	}, nil
 }
 
-func (h *EDClientV8) ImportSavedObjects(filepath string) (*Response, error) {
+func (h *EDClientV8) ImportSavedObjects(spaceName, filepath string) (*Response, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
 		SetHeader("kbn-xsrf", "true").
 		SetFile("file", filepath).
 		SetQueryParam("overwrite", "true")
-	res, err := req.Post(SavedObjectsImportURL)
+	res, err := req.Post("/s/" + spaceName + SavedObjectsImportURL)
 	if err != nil {
 		klog.Error(err, "Failed to send http request")
 		return nil, err
@@ -141,4 +143,39 @@ func (h *EDClientV8) ImportSavedObjects(filepath string) (*Response, error) {
 		Code: res.StatusCode(),
 		Body: res.RawBody(),
 	}, nil
+}
+
+func (h *EDClientV8) ListSpaces() ([]string, error) {
+	req := h.Client.R().
+		SetDoNotParseResponse(true).
+		SetHeaders(map[string]string{
+			"Content-Type": "application/json",
+			"kbn-xsrf":     "true",
+		})
+	res, err := req.Get(ListSpacesURL)
+	if err != nil {
+		klog.Error("Failed to send http request")
+		return nil, err
+	}
+
+	body, err := io.ReadAll(res.RawBody())
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return nil, fmt.Errorf("failed to list dashboard spaces %s", string(body))
+	}
+
+	var spaces []map[string]interface{}
+	if err = json.Unmarshal(body, &spaces); err != nil {
+		return nil, err
+	}
+
+	var spacesName []string
+	for _, space := range spaces {
+		spacesName = append(spacesName, space["id"].(string))
+	}
+
+	return spacesName, nil
 }

@@ -23,6 +23,7 @@ import (
 type EDClient interface {
 	GetHealthStatus() (*Health, error)
 	GetStateFromHealthResponse(health *Health) (esapi.DashboardServerState, error)
-	ExportSavedObjects() (*Response, error)
-	ImportSavedObjects(filepath string) (*Response, error)
+	ExportSavedObjects(spaceName string) (*Response, error)
+	ImportSavedObjects(spaceName, filepath string) (*Response, error)
+	ListSpaces() ([]string, error)
 }
