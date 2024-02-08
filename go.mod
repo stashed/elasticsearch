@@ -1,6 +1,6 @@
 module stash.appscode.dev/elasticsearch
 
-go 1.21.5
+go 1.21.6
 
 require (
 	github.com/spf13/cobra v1.7.0
@@ -14,11 +14,11 @@ require (
 	k8s.io/client-go v0.29.0
 	k8s.io/klog/v2 v2.110.1
 	kmodules.xyz/client-go v0.29.6
-	kmodules.xyz/custom-resources v0.29.0
+	kmodules.xyz/custom-resources v0.29.1
 	kmodules.xyz/offshoot-api v0.29.0
-	kubedb.dev/apimachinery v0.41.0-beta.1.0.20240124061503-ce4799bb0e5c
-	kubedb.dev/db-client-go v0.0.9-0.20240126103627-22edae9f6b92
-	sigs.k8s.io/controller-runtime v0.16.3
+	kubedb.dev/apimachinery v0.41.0
+	kubedb.dev/db-client-go v0.0.11-0.20240208083800-50462091d436
+	sigs.k8s.io/controller-runtime v0.17.0
 	stash.appscode.dev/apimachinery v0.32.1-0.20240118085630-4c06ed8c04a7
 )
 
@@ -33,7 +33,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
-	github.com/evanphx/json-patch/v5 v5.7.0 // indirect
+	github.com/evanphx/json-patch/v5 v5.8.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -41,6 +41,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
 	github.com/go-resty/resty/v2 v2.11.0 // indirect
+	github.com/go-sql-driver/mysql v1.7.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
@@ -74,7 +75,7 @@ require (
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/oauth2 v0.15.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/term v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect

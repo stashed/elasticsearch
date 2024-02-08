@@ -307,19 +307,30 @@ func (opt *esOptions) dumpDashboardObjects(appBinding *appcatalog.AppBinding) er
 		return err
 	}
 
-	response, err := dashboardClient.ExportSavedObjects()
+	spaces, err := dashboardClient.ListSpaces()
 	if err != nil {
 		return err
 	}
 
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
+	for _, space := range spaces {
+		response, err := dashboardClient.ExportSavedObjects(space)
+		if err != nil {
+			return err
+		}
+
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+
+		if response.Code != http.StatusOK {
+			return fmt.Errorf("failed to export dashboard saved objects %s", string(body))
+		}
+
+		if err = os.WriteFile(opt.getDashboardFilePath(space), body, os.ModePerm); err != nil {
+			return err
+		}
 	}
 
-	if response.Code != http.StatusOK {
-		return fmt.Errorf("failed to export dashboard saved objects %s", string(body))
-	}
-
-	return os.WriteFile(filepath.Join(opt.interimDataDir, DashboardObjectsFile), body, os.ModePerm)
+	return nil
 }

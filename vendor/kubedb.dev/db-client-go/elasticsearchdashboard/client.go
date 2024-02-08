@@ -33,10 +33,11 @@ const (
 	SavedObjectsReqBodyES = `{"type": ["dashboard", "config", "index-pattern", "url", "query", "tag", "canvas-element", "canvas-workpad", "action", "alert", "visualization",
 "graph-workspace", "map", "lens", "cases", "search", "osquery-saved-query", "osquery-pack", "uptime-dynamic-settings", "infrastructure-ui-source", "metrics-explorer-view",
 "inventory-view", "apm-indices"]}`
-	SavedObjectsReqBodyOS = `{"type": ["config", "url", "index-pattern", "query", "dashboard", "visualization", "visualization-visbuilder", "augment-vis", "map",
-"observability-panel", "observability-visualization", "search"]}`
+	SavedObjectsReqBodyOS = `{"type": ["config", "url", "index-pattern", "query", "dashboard", "visualization", "visualization-visbuilder", "map", "observability-panel",
+"observability-visualization", "search"]}`
 	SavedObjectsExportURL = "/api/saved_objects/_export"
 	SavedObjectsImportURL = "/api/saved_objects/_import"
+	ListSpacesURL         = "/api/spaces/space"
 )
 
 type Client struct {
