@@ -575,8 +575,8 @@ kmodules.xyz/custom-resources v0.29.1 h1:xiNylhs3ILRbcUhxxy306AOy9GMA4Mq7xFIptZK
 kmodules.xyz/custom-resources v0.29.1/go.mod h1:829zDY1EjaxPP52h1T73LZx/vgv8Pld9/uTT/ViZTc0=
 kmodules.xyz/monitoring-agent-api v0.29.0 h1:gpFl6OZrlMLb/ySMHdREI9EwGtnJ91oZBn9H1UFRwB4=
 kmodules.xyz/monitoring-agent-api v0.29.0/go.mod h1:iNbvaMTgVFOI5q2LJtGK91j4Dmjv4ZRiRdasGmWLKQI=
-kmodules.xyz/objectstore-api v0.29.0 h1:dK53fQXdoboyW/EyBBAMjykT8u7jstKrM1DS4RJvhEU=
-kmodules.xyz/objectstore-api v0.29.0/go.mod h1:Kxmv6F7Kd/7EoKX3X2xIzhHT++zlj2qdXLcp/8avUYI=
+kmodules.xyz/objectstore-api v0.29.1-0.20240205052451-a5cf0aa669f1 h1:k66vcGkx9SNka0tfmbeBiEgwj1E2+EKJHxnifOUsroA=
+kmodules.xyz/objectstore-api v0.29.1-0.20240205052451-a5cf0aa669f1/go.mod h1:Kxmv6F7Kd/7EoKX3X2xIzhHT++zlj2qdXLcp/8avUYI=
 kmodules.xyz/offshoot-api v0.29.0 h1:GHLhxxT9jU1N8+FvOCCeJNyU5g0duYS46UGrs6AHNLY=
 kmodules.xyz/offshoot-api v0.29.0/go.mod h1:5NxhBblXoDHWStx9HCDJR2KFTwYjEZ7i1Id3jelIunw=
 kmodules.xyz/prober v0.29.0 h1:Ex7m4F9rH7uWNNJlLgP63ROOM+nUATJkC2L5OQ7nwMg=
@@ -594,5 +594,5 @@ sigs.k8s.io/structured-merge-diff/v4 v4.4.1 h1:150L+0vs/8DA78h1u02ooW1/fFq/Lwr+s
 sigs.k8s.io/structured-merge-diff/v4 v4.4.1/go.mod h1:N8hJocpFajUSSeSJ9bOZ77VzejKZaXsTtZo4/u7Io08=
 sigs.k8s.io/yaml v1.4.0 h1:Mk1wCc2gy/F0THH0TAp1QYyJNzRm2KCLy3o5ASXVI5E=
 sigs.k8s.io/yaml v1.4.0/go.mod h1:Ejl7/uTz7PSA4eKMyQCUTnhZYNmLIl+5c2lQPGR2BPY=
-stash.appscode.dev/apimachinery v0.32.1-0.20240118085630-4c06ed8c04a7 h1:Z1PXS2SjVX4J4Owv7HjJ7R/LOgnl3UQG9uhSfDBg2Zs=
-stash.appscode.dev/apimachinery v0.32.1-0.20240118085630-4c06ed8c04a7/go.mod h1:hTslVqyx20fF2i2s/m0rqXD+pZwnI2oG3k5zPzsDnXQ=
+stash.appscode.dev/apimachinery v0.32.1-0.20240206075719-41610d0ce38f h1:0B35Biy3T5cNWlfMKr2LPgDaXv6C7IeDBYHOeqBaLko=
+stash.appscode.dev/apimachinery v0.32.1-0.20240206075719-41610d0ce38f/go.mod h1:5ZunLyvEChKp4LpPJq8mTKQss3bsT93S/Tqu9BRvQTA=
