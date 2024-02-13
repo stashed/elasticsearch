@@ -13,13 +13,13 @@ require (
 	k8s.io/apimachinery v0.29.0
 	k8s.io/client-go v0.29.0
 	k8s.io/klog/v2 v2.110.1
-	kmodules.xyz/client-go v0.29.6
+	kmodules.xyz/client-go v0.29.7
 	kmodules.xyz/custom-resources v0.29.1
 	kmodules.xyz/offshoot-api v0.29.0
 	kubedb.dev/apimachinery v0.41.0
 	kubedb.dev/db-client-go v0.0.11-0.20240208083800-50462091d436
 	sigs.k8s.io/controller-runtime v0.17.0
-	stash.appscode.dev/apimachinery v0.33.0-rc.0
+	stash.appscode.dev/apimachinery v0.33.0
 )
 
 require (
