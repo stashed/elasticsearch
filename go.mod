@@ -21,7 +21,7 @@ require (
 	kubedb.dev/apimachinery v0.41.0
 	kubedb.dev/db-client-go v0.0.11-0.20240208083800-50462091d436
 	sigs.k8s.io/controller-runtime v0.17.2
-	stash.appscode.dev/apimachinery v0.33.0
+	stash.appscode.dev/apimachinery v0.34.0
 )
 
 require (
