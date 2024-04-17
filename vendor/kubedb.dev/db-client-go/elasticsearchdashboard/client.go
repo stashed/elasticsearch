@@ -37,7 +37,7 @@ const (
 "observability-visualization", "search"]}`
 	SavedObjectsExportURL = "/api/saved_objects/_export"
 	SavedObjectsImportURL = "/api/saved_objects/_import"
-	ListSpacesURL         = "/api/spaces/space"
+	SpacesURL             = "/api/spaces/space"
 )
 
 type Client struct {
@@ -87,4 +87,14 @@ type ResponseBody struct {
 	Version map[string]interface{} `json:"version"`
 	Status  map[string]interface{} `json:"status"`
 	Metrics map[string]interface{} `json:"metrics"`
+}
+
+type Space struct {
+	Id               string   `json:"id"`
+	Name             string   `json:"name"`
+	Description      string   `json:"description"`
+	Color            string   `json:"color"`
+	Initials         string   `json:"initials"`
+	DisabledFeatures []string `json:"disabledFeatures"`
+	ImageUrl         string   `json:"imageUrl"`
 }

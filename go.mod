@@ -7,6 +7,7 @@ toolchain go1.22.2
 require (
 	github.com/spf13/cobra v1.8.0
 	go.bytebuilders.dev/license-verifier/kubernetes v0.14.0
+	golang.org/x/text v0.14.0
 	gomodules.xyz/flags v0.1.3
 	gomodules.xyz/go-sh v0.1.0
 	gomodules.xyz/logs v0.0.7
@@ -18,8 +19,8 @@ require (
 	kmodules.xyz/client-go v0.29.13
 	kmodules.xyz/custom-resources v0.29.1
 	kmodules.xyz/offshoot-api v0.29.0
-	kubedb.dev/apimachinery v0.41.0
-	kubedb.dev/db-client-go v0.0.11-0.20240208083800-50462091d436
+	kubedb.dev/apimachinery v0.44.0
+	kubedb.dev/db-client-go v0.0.15-0.20240417062702-985900c1a636
 	sigs.k8s.io/controller-runtime v0.17.2
 	stash.appscode.dev/apimachinery v0.34.0
 )
@@ -29,6 +30,7 @@ require (
 	github.com/PuerkitoBio/purell v1.2.1 // indirect
 	github.com/armon/circbuf v0.0.0-20190214190532-5111143e8da2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cert-manager/cert-manager v1.13.3 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/codegangsta/inject v0.0.0-20150114235600-33e0aa1cb7c0 // indirect
@@ -81,7 +83,6 @@ require (
 	golang.org/x/oauth2 v0.15.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	gomodules.xyz/clock v0.0.0-20200817085942-06523dba733f // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
@@ -104,6 +105,7 @@ require (
 	kmodules.xyz/monitoring-agent-api v0.29.0 // indirect
 	kmodules.xyz/objectstore-api v0.29.1 // indirect
 	kmodules.xyz/prober v0.29.0 // indirect
+	kubeops.dev/petset v0.0.5 // indirect
 	sigs.k8s.io/gateway-api v0.8.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
