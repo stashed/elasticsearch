@@ -145,6 +145,10 @@ func (h *OSClient) ImportSavedObjects(_, filepath string) (*Response, error) {
 	}, nil
 }
 
-func (h *OSClient) ListSpaces() ([]string, error) {
-	return []string{"default"}, nil
+func (h *OSClient) ListSpaces() ([]Space, error) {
+	return []Space{{Id: "default"}}, nil
+}
+
+func (h *OSClient) CreateSpace(_ Space) error {
+	return nil
 }
