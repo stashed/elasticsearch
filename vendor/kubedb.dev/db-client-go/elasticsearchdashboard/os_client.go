@@ -149,6 +149,6 @@ func (h *OSClient) ListSpaces() ([]Space, error) {
 	return []Space{{Id: "default"}}, nil
 }
 
-func (h *OSClient) CreateSpace(space Space) error {
+func (h *OSClient) CreateSpace(_ Space) error {
 	return nil
 }

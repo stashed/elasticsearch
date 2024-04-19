@@ -324,6 +324,10 @@ func (opt *esOptions) getSpaces() ([]elasticsearchdashboard.Space, error) {
 			return nil, err
 		}
 
+		if len(spaces) == 0 {
+			return nil, fmt.Errorf("no spaces found in interim data directory")
+		}
+
 		return spaces, nil
 	} else {
 		data, err := os.ReadFile(filepath.Join(opt.interimDataDir, SpacesInfoFile))

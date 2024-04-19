@@ -110,10 +110,7 @@ func (h *EDClientV8) GetStateFromHealthResponse(health *Health) (esapi.Dashboard
 func (h *EDClientV8) ExportSavedObjects(spaceName string) (*Response, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
-		SetHeaders(map[string]string{
-			"Content-Type": "application/json",
-			"kbn-xsrf":     "true",
-		}).
+		SetHeaders(jsonHeaderForKibanaAPI).
 		SetBody([]byte(SavedObjectsReqBodyES))
 	res, err := req.Post("/s/" + spaceName + SavedObjectsExportURL)
 	if err != nil {
@@ -148,10 +145,7 @@ func (h *EDClientV8) ImportSavedObjects(spaceName, filepath string) (*Response, 
 func (h *EDClientV8) ListSpaces() ([]Space, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
-		SetHeaders(map[string]string{
-			"Content-Type": "application/json",
-			"kbn-xsrf":     "true",
-		})
+		SetHeaders(jsonHeaderForKibanaAPI)
 	res, err := req.Get(SpacesURL)
 	if err != nil {
 		klog.Error("Failed to send http request")
@@ -178,10 +172,7 @@ func (h *EDClientV8) ListSpaces() ([]Space, error) {
 func (h *EDClientV8) CreateSpace(space Space) error {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
-		SetHeaders(map[string]string{
-			"Content-Type": "application/json",
-			"kbn-xsrf":     "true",
-		}).
+		SetHeaders(jsonHeaderForKibanaAPI).
 		SetBody(space)
 	res, err := req.Post(SpacesURL)
 	if err != nil {
@@ -189,8 +180,13 @@ func (h *EDClientV8) CreateSpace(space Space) error {
 		return err
 	}
 
+	body, err := io.ReadAll(res.RawBody())
+	if err != nil {
+		return err
+	}
+
 	if res.StatusCode() != http.StatusOK {
-		return fmt.Errorf("failed to create dashboard space %s", space.Name)
+		return fmt.Errorf("failed to create dashboard space %s: %s", space.Name, string(body))
 	}
 
 	return nil

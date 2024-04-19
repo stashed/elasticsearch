@@ -40,6 +40,11 @@ const (
 	SpacesURL             = "/api/spaces/space"
 )
 
+var jsonHeaderForKibanaAPI = map[string]string{
+	"Content-Type": "application/json",
+	"kbn-xsrf":     "true",
+}
+
 type Client struct {
 	EDClient
 }
@@ -92,9 +97,9 @@ type ResponseBody struct {
 type Space struct {
 	Id               string   `json:"id"`
 	Name             string   `json:"name"`
-	Description      string   `json:"description"`
-	Color            string   `json:"color"`
-	Initials         string   `json:"initials"`
-	DisabledFeatures []string `json:"disabledFeatures"`
-	ImageUrl         string   `json:"imageUrl"`
+	Description      string   `json:"description,omitempty"`
+	Color            string   `json:"color,omitempty"`
+	Initials         string   `json:"initials,omitempty"`
+	DisabledFeatures []string `json:"disabledFeatures,omitempty"`
+	ImageUrl         string   `json:"imageUrl,omitempty"`
 }

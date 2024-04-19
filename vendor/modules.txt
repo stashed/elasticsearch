@@ -780,7 +780,7 @@ kubedb.dev/apimachinery/apis/kubedb
 kubedb.dev/apimachinery/apis/kubedb/v1alpha2
 kubedb.dev/apimachinery/crds
 kubedb.dev/apimachinery/pkg/validator
-# kubedb.dev/db-client-go v0.0.15-0.20240417062702-985900c1a636
+# kubedb.dev/db-client-go v0.0.15-0.20240419064300-f4fab3d22391
 ## explicit; go 1.22.0
 kubedb.dev/db-client-go/elasticsearchdashboard
 # kubeops.dev/petset v0.0.5
