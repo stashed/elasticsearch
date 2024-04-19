@@ -274,9 +274,8 @@ func (opt *esOptions) restoreDashboardObjects(appBinding *appcatalog.AppBinding)
 
 	for _, space := range spaces {
 		if !isExist(existingSpaces, space.Id) {
-			err := dashboardClient.CreateSpace(space)
-			if err != nil {
-				return fmt.Errorf("failed to create space %s %w", space.Id, err)
+			if err = dashboardClient.CreateSpace(space); err != nil {
+				return fmt.Errorf("failed to create space %s: %w", space.Id, err)
 			}
 		}
 
