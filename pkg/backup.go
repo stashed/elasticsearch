@@ -18,6 +18,7 @@ package pkg
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -313,8 +314,17 @@ func (opt *esOptions) dumpDashboardObjects(appBinding *appcatalog.AppBinding) er
 		return err
 	}
 
+	data, err := json.Marshal(spaces)
+	if err != nil {
+		return fmt.Errorf("failed to marshal spaces: %w", err)
+	}
+
+	if err = os.WriteFile(filepath.Join(opt.interimDataDir, SpacesInfoFile), data, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to write spaces info: %w", err)
+	}
+
 	for _, space := range spaces {
-		response, err := dashboardClient.ExportSavedObjects(space)
+		response, err := dashboardClient.ExportSavedObjects(space.Id)
 		if err != nil {
 			return err
 		}
@@ -328,7 +338,7 @@ func (opt *esOptions) dumpDashboardObjects(appBinding *appcatalog.AppBinding) er
 			return fmt.Errorf("failed to export dashboard saved objects %s", string(body))
 		}
 
-		if err = os.WriteFile(opt.getDashboardFilePath(space), body, os.ModePerm); err != nil {
+		if err = os.WriteFile(opt.getDashboardFilePath(space.Id), body, os.ModePerm); err != nil {
 			return err
 		}
 	}

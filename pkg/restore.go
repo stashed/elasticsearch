@@ -18,11 +18,13 @@ package pkg
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"stash.appscode.dev/apimachinery/apis"
 	api_v1beta1 "stash.appscode.dev/apimachinery/apis/stash/v1beta1"
@@ -30,6 +32,8 @@ import (
 
 	"github.com/spf13/cobra"
 	license "go.bytebuilders.dev/license-verifier/kubernetes"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"gomodules.xyz/flags"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -38,6 +42,7 @@ import (
 	appcatalog "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	appcatalog_cs "kmodules.xyz/custom-resources/client/clientset/versioned"
 	v1 "kmodules.xyz/offshoot-api/api/v1"
+	"kubedb.dev/db-client-go/elasticsearchdashboard"
 )
 
 func NewCmdRestore() *cobra.Command {
@@ -257,13 +262,24 @@ func (opt *esOptions) restoreDashboardObjects(appBinding *appcatalog.AppBinding)
 		return err
 	}
 
-	spaces, err := dashboardClient.ListSpaces()
+	spaces, err := opt.getSpaces()
+	if err != nil {
+		return err
+	}
+
+	existingSpaces, err := dashboardClient.ListSpaces()
 	if err != nil {
 		return err
 	}
 
 	for _, space := range spaces {
-		response, err := dashboardClient.ImportSavedObjects(space, opt.getDashboardFilePath(space))
+		if !isExist(existingSpaces, space.Id) {
+			if err = dashboardClient.CreateSpace(space); err != nil {
+				return fmt.Errorf("failed to create space %s: %w", space.Id, err)
+			}
+		}
+
+		response, err := dashboardClient.ImportSavedObjects(space.Id, opt.getDashboardFilePath(space.Id))
 		if err != nil {
 			return err
 		}
@@ -278,10 +294,65 @@ func (opt *esOptions) restoreDashboardObjects(appBinding *appcatalog.AppBinding)
 		}
 
 		// delete the dashboard file(s) as it is not required for restoring the dumps
-		if err = clearFile(opt.getDashboardFilePath(space)); err != nil {
+		if err = clearFile(opt.getDashboardFilePath(space.Id)); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (opt *esOptions) getSpaces() ([]elasticsearchdashboard.Space, error) {
+	if _, err := os.Stat(filepath.Join(opt.interimDataDir, SpacesInfoFile)); os.IsNotExist(err) {
+		spaces := make([]elasticsearchdashboard.Space, 0)
+		if err = filepath.Walk(opt.interimDataDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if filepath.Ext(info.Name()) == DashboardSavedObjectsExt {
+				id, _ := strings.CutSuffix(info.Name(), DashboardSavedObjectsExt)
+				spaces = append(spaces, elasticsearchdashboard.Space{
+					Id:   id,
+					Name: cases.Title(language.English).String(strings.Replace(id, "-", " ", -1)),
+				})
+			}
+
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+
+		if len(spaces) == 0 {
+			return nil, fmt.Errorf("no spaces found in interim data directory")
+		}
+
+		return spaces, nil
+	} else {
+		data, err := os.ReadFile(filepath.Join(opt.interimDataDir, SpacesInfoFile))
+		if err != nil {
+			return nil, fmt.Errorf("failed to read spaces info %w", err)
+		}
+
+		var spaces []elasticsearchdashboard.Space
+		if err = json.Unmarshal(data, &spaces); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal spaces info %w", err)
+		}
+
+		// delete the spaces info file as it is not required for restoring the dumps
+		if err = clearFile(filepath.Join(opt.interimDataDir, SpacesInfoFile)); err != nil {
+			return nil, err
+		}
+
+		return spaces, nil
+	}
+}
+
+func isExist(existingSpaces []elasticsearchdashboard.Space, spaceId string) bool {
+	for _, space := range existingSpaces {
+		if space.Id == spaceId {
+			return true
+		}
+	}
+	return false
 }
