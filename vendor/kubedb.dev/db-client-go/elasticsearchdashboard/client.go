@@ -37,8 +37,13 @@ const (
 "observability-visualization", "search"]}`
 	SavedObjectsExportURL = "/api/saved_objects/_export"
 	SavedObjectsImportURL = "/api/saved_objects/_import"
-	ListSpacesURL         = "/api/spaces/space"
+	SpacesURL             = "/api/spaces/space"
 )
+
+var jsonHeaderForKibanaAPI = map[string]string{
+	"Content-Type": "application/json",
+	"kbn-xsrf":     "true",
+}
 
 type Client struct {
 	EDClient
@@ -87,4 +92,14 @@ type ResponseBody struct {
 	Version map[string]interface{} `json:"version"`
 	Status  map[string]interface{} `json:"status"`
 	Metrics map[string]interface{} `json:"metrics"`
+}
+
+type Space struct {
+	Id               string   `json:"id"`
+	Name             string   `json:"name"`
+	Description      string   `json:"description,omitempty"`
+	Color            string   `json:"color,omitempty"`
+	Initials         string   `json:"initials,omitempty"`
+	DisabledFeatures []string `json:"disabledFeatures,omitempty"`
+	ImageUrl         string   `json:"imageUrl,omitempty"`
 }

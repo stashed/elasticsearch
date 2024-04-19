@@ -110,10 +110,7 @@ func (h *EDClientV8) GetStateFromHealthResponse(health *Health) (esapi.Dashboard
 func (h *EDClientV8) ExportSavedObjects(spaceName string) (*Response, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
-		SetHeaders(map[string]string{
-			"Content-Type": "application/json",
-			"kbn-xsrf":     "true",
-		}).
+		SetHeaders(jsonHeaderForKibanaAPI).
 		SetBody([]byte(SavedObjectsReqBodyES))
 	res, err := req.Post("/s/" + spaceName + SavedObjectsExportURL)
 	if err != nil {
@@ -145,14 +142,11 @@ func (h *EDClientV8) ImportSavedObjects(spaceName, filepath string) (*Response, 
 	}, nil
 }
 
-func (h *EDClientV8) ListSpaces() ([]string, error) {
+func (h *EDClientV8) ListSpaces() ([]Space, error) {
 	req := h.Client.R().
 		SetDoNotParseResponse(true).
-		SetHeaders(map[string]string{
-			"Content-Type": "application/json",
-			"kbn-xsrf":     "true",
-		})
-	res, err := req.Get(ListSpacesURL)
+		SetHeaders(jsonHeaderForKibanaAPI)
+	res, err := req.Get(SpacesURL)
 	if err != nil {
 		klog.Error("Failed to send http request")
 		return nil, err
@@ -167,15 +161,33 @@ func (h *EDClientV8) ListSpaces() ([]string, error) {
 		return nil, fmt.Errorf("failed to list dashboard spaces %s", string(body))
 	}
 
-	var spaces []map[string]interface{}
+	var spaces []Space
 	if err = json.Unmarshal(body, &spaces); err != nil {
 		return nil, err
 	}
 
-	var spacesName []string
-	for _, space := range spaces {
-		spacesName = append(spacesName, space["id"].(string))
+	return spaces, nil
+}
+
+func (h *EDClientV8) CreateSpace(space Space) error {
+	req := h.Client.R().
+		SetDoNotParseResponse(true).
+		SetHeaders(jsonHeaderForKibanaAPI).
+		SetBody(space)
+	res, err := req.Post(SpacesURL)
+	if err != nil {
+		klog.Error(err, "Failed to send http request")
+		return err
 	}
 
-	return spacesName, nil
+	body, err := io.ReadAll(res.RawBody())
+	if err != nil {
+		return err
+	}
+
+	if res.StatusCode() != http.StatusOK {
+		return fmt.Errorf("failed to create dashboard space %s: %s", space.Name, string(body))
+	}
+
+	return nil
 }
