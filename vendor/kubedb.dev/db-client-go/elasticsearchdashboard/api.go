@@ -25,5 +25,6 @@ type EDClient interface {
 	GetStateFromHealthResponse(health *Health) (esapi.DashboardServerState, error)
 	ExportSavedObjects(spaceName string) (*Response, error)
 	ImportSavedObjects(spaceName, filepath string) (*Response, error)
-	ListSpaces() ([]string, error)
+	ListSpaces() ([]Space, error)
+	CreateSpace(space Space) error
 }

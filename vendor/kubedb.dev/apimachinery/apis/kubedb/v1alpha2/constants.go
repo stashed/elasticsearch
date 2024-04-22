@@ -324,15 +324,18 @@ const (
 	// =========================== SingleStore Constants ============================
 	SinglestoreDatabasePortName       = "db"
 	SinglestorePrimaryServicePortName = "primary"
+	SinglestoreStudioPortName         = "studio"
 	SinglestoreDatabasePort           = 3306
+	SinglestoreStudioPort             = 8081
+	SinglestoreExporterPort           = 9104
 	SinglestoreRootUserName           = "ROOT_USERNAME"
 	SinglestoreRootPassword           = "ROOT_PASSWORD"
 	SinglestoreRootUser               = "root"
 	DatabasePodMaster                 = "Master"
 	DatabasePodAggregator             = "Aggregator"
 	DatabasePodLeaf                   = "Leaf"
-	StatefulSetTypeMasterAggregator   = "master-aggregator"
-	StatefulSetTypeLeaf               = "leaf"
+	PetSetTypeAggregator              = "aggregator"
+	PetSetTypeLeaf                    = "leaf"
 	SinglestoreDatabaseHealth         = "singlestore_health"
 	SinglestoreTableHealth            = "singlestore_health_table"
 
@@ -437,17 +440,20 @@ const (
 	// =========================== Redis Constants ============================
 	RedisConfigKey = "redis.conf" // RedisConfigKey is going to create for the customize redis configuration
 	// DefaultConfigKey is going to create for the default redis configuration
-	RedisContainerName          = ResourceSingularRedis
-	RedisSentinelContainerName  = "redissentinel"
-	DefaultConfigKey            = "default.conf"
-	RedisShardKey               = RedisKey + "/shard"
-	RedisDatabasePortName       = "db"
-	RedisPrimaryServicePortName = "primary"
-	RedisDatabasePort           = 6379
-	RedisSentinelPort           = 26379
-	RedisGossipPortName         = "gossip"
-	RedisGossipPort             = 16379
-	RedisSentinelPortName       = "sentinel"
+	RedisContainerName             = ResourceSingularRedis
+	RedisSentinelContainerName     = "redissentinel"
+	DefaultConfigKey               = "default.conf"
+	RedisShardKey                  = RedisKey + "/shard"
+	RedisDatabasePortName          = "db"
+	RedisPrimaryServicePortName    = "primary"
+	RedisDatabasePort              = 6379
+	RedisSentinelPort              = 26379
+	RedisGossipPortName            = "gossip"
+	RedisGossipPort                = 16379
+	RedisSentinelPortName          = "sentinel"
+	RedisInitContainerName         = "redis-init"
+	RedisCoordinatorContainerName  = "rd-coordinator"
+	RedisSentinelInitContainerName = "sentinel-init"
 
 	RedisScriptVolumeName      = "script-vol"
 	RedisScriptVolumePath      = "/scripts"
@@ -460,6 +466,8 @@ const (
 	RedisSentinelTLSVolumePath = "/sentinel-certs"
 	RedisConfigVolumeName      = "redis-config"
 	RedisConfigVolumePath      = "/usr/local/etc/redis/"
+	RedisInitVolumeName        = "init-volume"
+	RedisInitVolumePath        = "/init"
 
 	RedisNodeFlagMaster = "master"
 	RedisNodeFlagNoAddr = "noaddr"
@@ -468,8 +476,11 @@ const (
 	RedisKeyFileSecretSuffix = "key"
 	RedisPEMSecretSuffix     = "pem"
 	RedisRootUsername        = "default"
-	EnvRedisUser             = "USERNAME"
-	EnvRedisPassword         = "REDISCLI_AUTH"
+
+	EnvRedisUser              = "USERNAME"
+	EnvRedisPassword          = "REDISCLI_AUTH"
+	EnvRedisMode              = "REDIS_MODE"
+	EnvRedisMajorRedisVersion = "MAJOR_REDIS_VERSION"
 
 	// =========================== PgBouncer Constants ============================
 	PgBouncerUpstreamServerCA               = "upstream-server-ca.crt"
@@ -489,17 +500,26 @@ const (
 	PgBouncerDefaultIgnoreStartupParameters = "empty"
 
 	// =========================== Pgpool Constants ============================
-	EnvPostgresUsername               = "POSTGRES_USERNAME"
-	EnvPgpoolPcpUser                  = "PGPOOL_PCP_USER"
-	EnvPgpoolPcpPassword              = "PGPOOL_PCP_PASSWORD"
-	EnvPgpoolPasswordEncryptionMethod = "PGPOOL_PASSWORD_ENCRYPTION_METHOD"
-	EnvEnablePoolPasswd               = "PGPOOL_ENABLE_POOL_PASSWD"
-	EnvSkipPasswdEncryption           = "PGPOOL_SKIP_PASSWORD_ENCRYPTION"
-	ConfigSecretMountPath             = "/config"
-	ConfigVolumeName                  = "pgpool-config"
-	ContainerName                     = "pgpool"
-	PgpoolAuthUsername                = "pcp"
-	SyncPeriod                        = 10
+	EnvPostgresUsername                = "POSTGRES_USERNAME"
+	EnvPgpoolPcpUser                   = "PGPOOL_PCP_USER"
+	EnvPgpoolPcpPassword               = "PGPOOL_PCP_PASSWORD"
+	EnvPgpoolPasswordEncryptionMethod  = "PGPOOL_PASSWORD_ENCRYPTION_METHOD"
+	EnvEnablePoolPasswd                = "PGPOOL_ENABLE_POOL_PASSWD"
+	EnvSkipPasswdEncryption            = "PGPOOL_SKIP_PASSWORD_ENCRYPTION"
+	PgpoolConfigSecretMountPath        = "/config"
+	PgpoolConfigVolumeName             = "pgpool-config"
+	PgpoolContainerName                = "pgpool"
+	PgpoolDefaultServicePort           = 9999
+	PgpoolMonitoringDefaultServicePort = 9719
+	PgpoolExporterDatabase             = "postgres"
+	EnvPgpoolExporterDatabase          = "POSTGRES_DATABASE"
+	EnvPgpoolService                   = "PGPOOL_SERVICE"
+	EnvPgpoolServicePort               = "PGPOOL_SERVICE_PORT"
+	EnvPgpoolSSLMode                   = "SSLMODE"
+	PgpoolDefaultSSLMode               = "disable"
+	PgpoolExporterContainerName        = "exporter"
+	PgpoolAuthUsername                 = "pcp"
+	SyncPeriod                         = 10
 	// ========================================== ZooKeeper Constants =================================================//
 
 	KubeDBZooKeeperRoleName         = "kubedb:zookeeper-version-reader"
@@ -540,7 +560,12 @@ const (
 	EnvZooKeeperClusterSize     = "CLUSTER_SIZE"
 	EnvZooKeeperUser            = "ZK_USER"
 	EnvZooKeeperPassword        = "ZK_PASSWORD"
-	ZooKeeperSuperUsername      = "super"
+	EnvZooKeeperJaasFilePath    = "ZK_JAAS_FILE_PATH"
+	EnvZooKeeperJVMFLags        = "JVMFLAGS"
+
+	ZooKeeperSuperUsername       = "super"
+	ZooKeeperSASLAuthLoginConfig = "-Djava.security.auth.login.config"
+	ZooKeeperJaasFilePath        = "/data/jaas.conf"
 )
 
 // List of possible condition types for a KubeDB object
@@ -591,7 +616,7 @@ const (
 	DatabaseReadAccessCheckSucceeded           = "DatabaseReadAccessCheckSucceeded"
 	DatabaseWriteAccessCheckSucceeded          = "DatabaseWriteAccessCheckSucceeded"
 	DatabaseReadAccessCheckFailed              = "DatabaseReadAccessCheckFailed"
-	DatabaseWriteAccessCheckFailed             = "DatabaseReadAccessCheckFailed"
+	DatabaseWriteAccessCheckFailed             = "DatabaseWriteAccessCheckFailed"
 	InternalUsersCredentialSyncFailed          = "InternalUsersCredentialsSyncFailed"
 	InternalUsersCredentialsSyncedSuccessfully = "InternalUsersCredentialsSyncedSuccessfully"
 )
@@ -747,6 +772,8 @@ const (
 	SolrInitContainerName = "init-solr"
 	SolrAdmin             = "admin"
 	SecurityJSON          = "security.json"
+	SolrZkDigest          = "zk-digest"
+	SolrZkReadonlyDigest  = "zk-digest-readonly"
 
 	SolrVolumeDefaultConfig = "default-config"
 	SolrVolumeCustomConfig  = "custom-config"
@@ -778,9 +805,11 @@ const (
 	SolrCloudDistribUpdateConnTimeoutKey   = "distribUpdateConnTimeout"
 	SolrCloudDistribUpdateConnTimeoutValue = 60000
 	SolrCloudZKCredentialProviderKey       = "zkCredentialsProvider"
-	SolrCloudZKCredentialProviderValue     = "org.apache.solr.common.cloud.DefaultZkCredentialsProvider"
+	SolrCloudZKCredentialProviderValue     = "org.apache.solr.common.cloud.DigestZkCredentialsProvider"
 	SolrCloudZKAclProviderKey              = "zkACLProvider"
-	SolrCloudZKAclProviderValue            = "org.apache.solr.common.cloud.DefaultZkACLProvider"
+	SolrCloudZKAclProviderValue            = "org.apache.solr.common.cloud.DigestZkACLProvider"
+	SolrCloudZKCredentialsInjectorKey      = "zkCredentialsInjector"
+	SolrCloudZKCredentialsInjectorValue    = "org.apache.solr.common.cloud.VMParamsZkCredentialsInjector"
 
 	ShardHandlerFactorySocketTimeoutKey   = "socketTimeout"
 	ShardHandlerFactorySocketTimeoutValue = 600000
@@ -822,26 +851,35 @@ const (
 	DruidMainConfigDir     = "/opt/druid/conf"
 	DruidCustomConfigDir   = "/tmp/config/custom-config"
 
-	DruidVolumeConfigCommon           = "common-config-volume"
-	DruidVolumeConfigNodes            = "nodetype-config-volume"
-	DruidConfigFileNameCommon         = "common.runtime.properties"
-	DruidConfigFileNameJVM            = "jvm.config"
-	DruidVolumeConfigFileNodes        = "runtime.properties"
-	DruidConfigFileNameCoordinators   = "coordinators.properties"
-	DruidConfigFileNameHistoricals    = "historicals.properties"
-	DruidConfigFileNameMiddleManagers = "middleManagers.properties"
-	DruidConfigFileNameBrokers        = "brokers.properties"
-	DruidConfigFileNameRouters        = "routers.properties"
-	DruidVolumeMySQLMetadataStorage   = "mysql-metadata-storage"
+	DruidVolumeCommonConfig          = "common-config-volume"
+	DruidCommonConfigFile            = "common.runtime.properties"
+	DruidCoordinatorsJVMConfigFile   = "coordinators.jvm.config"
+	DruidHistoricalsJVMConfigFile    = "historicals.jvm.config"
+	DruidBrokersJVMConfigFile        = "brokers.jvm.config"
+	DruidMiddleManagersJVMConfigFile = "middleManagers.jvm.config"
+	DruidRoutersJVMConfigFile        = "routers.jvm.config"
+	DruidCoordinatorsConfigFile      = "coordinators.properties"
+	DruidHistoricalsConfigFile       = "historicals.properties"
+	DruidMiddleManagersConfigFile    = "middleManagers.properties"
+	DruidBrokersConfigFile           = "brokers.properties"
+	DruidRoutersConfigFile           = "routers.properties"
+	DruidVolumeMySQLMetadataStorage  = "mysql-metadata-storage"
 
-	DruidMainContainer = "druid"
-	DruidInitContainer = "init-druid"
-	DruidUserAdmin     = "admin"
+	DruidContainerName     = "druid"
+	DruidInitContainerName = "init-druid"
+	DruidUserAdmin         = "admin"
 
 	EnvDruidAdminPassword          = "DRUID_ADMIN_PASSWORD"
 	EnvDruidMetdataStoragePassword = "DRUID_METADATA_STORAGE_PASSWORD"
 	EnvDruidZKServicePassword      = "DRUID_ZK_SERVICE_PASSWORD"
 	EnvDruidCoordinatorAsOverlord  = "DRUID_COORDINATOR_AS_OVERLORD"
+
+	DruidPortCoordinators   = 8081
+	DruidPortOverlords      = 8090
+	DruidPortHistoricals    = 8083
+	DruidPortMiddleManagers = 8091
+	DruidPortBrokers        = 8082
+	DruidPortRouters        = 8888
 
 	// Common Runtime Configurations Properties
 	// ZooKeeperSpec
@@ -914,8 +952,25 @@ const (
 	DruidExtensionPostgreSQLMetadataStorage = "postgresql-metadata-storage"
 	DruidExtensionBasicSecurity             = "druid-basic-security"
 	DruidExtensionMultiStageQuery           = "druid-multi-stage-query"
+	DruidExtensionPrometheusEmitter         = "prometheus-emitter"
+	DruidService                            = "druid.service"
 
-	DruidService = "druid.service"
+	// Monitoring Configurations
+	DruidEmitter                                = "druid.emitter"
+	DruidEmitterPrometheus                      = "prometheus"
+	DruidEmitterPrometheusPortKey               = "druid.emitter.prometheus.port"
+	DruidEmitterPrometheusPortVal               = 8080
+	DruidMonitoringMonitorsKey                  = "druid.monitoring.monitors"
+	DruidEmitterPrometheusStrategy              = "druid.emitter.prometheus.strategy"
+	DruidMetricsJVMMonitor                      = "org.apache.druid.java.util.metrics.JvmMonitor"
+	DruidMetricsServiceStatusMonitor            = "org.apache.druid.server.metrics.ServiceStatusMonitor"
+	DruidMetricsQueryCountStatsMonitor          = "org.apache.druid.server.metrics.QueryCountStatsMonitor"
+	DruidMonitoringHistoricalMetricsMonitor     = "org.apache.druid.server.metrics.HistoricalMetricsMonitor"
+	DruidMonitoringSegmentsStatsMonitor         = "org.apache.druid.server.metrics.SegmentStatsMonitor"
+	DruidMonitoringWorkerTaskCountsStatsMonitor = "org.apache.druid.server.metrics.WorkerTaskCountStatsMonitor"
+	DruidMonitoringQueryCountStatsMonitor       = "org.apache.druid.server.metrics.QueryCountStatsMonitor"
+	DruidMonitoringTaskCountStatsMonitor        = "org.apache.druid.server.metrics.TaskCountStatsMonitor"
+	DruidMonitoringSysMonitor                   = "org.apache.druid.java.util.metrics.SysMonitor"
 
 	/// Coordinators Configurations
 	DruidCoordinatorStartDelay                = "druid.coordinator.startDelay"
@@ -935,6 +990,8 @@ const (
 	DruidIndexerLogsKillDurationToRetain = "druid.indexer.logs.kill.durationToRetain"
 	DruidIndexerLogsKillInitialDelay     = "druid.indexer.logs.kill.initialDelay"
 	DruidIndexerLogsKillDelay            = "druid.indexer.logs.kill.delay"
+
+	DruidEmitterLoggingLogLevel = "druid.emitter.logging.logLevel"
 
 	/// Historicals Configurations
 	// Properties
@@ -988,26 +1045,11 @@ const (
 	DruidHealthDataOne  = "1"
 )
 
-type DruidMetadataStorageType string
-
-const (
-	DruidMetadataStorageMySQL      DruidMetadataStorageType = "MySQL"
-	DruidMetadataStoragePostgreSQL DruidMetadataStorageType = "PostgreSQL"
-)
-
-type DruidDeepStorageType string
-
-const (
-	DruidDeepStorageS3     DruidDeepStorageType = "s3"
-	DruidDeepStorageGoogle DruidDeepStorageType = "google"
-	DruidDeepStorageAzure  DruidDeepStorageType = "azure"
-	DruidDeepStorageHDFS   DruidDeepStorageType = "hdfs"
-)
-
 const (
 	RabbitMQAMQPPort          = 5672
 	RabbitMQPeerDiscoveryPort = 4369
 	RabbitMQManagementUIPort  = 15672
+	RabbitMQExporterPort      = 15692
 	RabbitMQInterNodePort     = 25672
 
 	RabbitMQVolumeData         = "data"
@@ -1094,6 +1136,7 @@ const (
 // Resource kind related constants
 const (
 	ResourceKindStatefulSet = "StatefulSet"
+	ResourceKindPetSet      = "PetSet"
 )
 
 var (
@@ -1157,6 +1200,28 @@ var (
 		},
 		Limits: core.ResourceList{
 			core.ResourceMemory: resource.MustParse("1.5Gi"),
+		},
+	}
+
+	// DefaultResourcesCoreAndMemoryIntensive must be used for Solr
+	DefaultResourcesCoreAndMemoryIntensiveSolr = core.ResourceRequirements{
+		Requests: core.ResourceList{
+			core.ResourceCPU:    resource.MustParse(".900"),
+			core.ResourceMemory: resource.MustParse("2Gi"),
+		},
+		Limits: core.ResourceList{
+			core.ResourceMemory: resource.MustParse("2Gi"),
+		},
+	}
+
+	// DefaultResourcesMemoryIntensiveSDB must be used for Singlestore when enabled monitoring or version >= 8.5.x
+	DefaultResourcesMemoryIntensiveSDB = core.ResourceRequirements{
+		Requests: core.ResourceList{
+			core.ResourceCPU:    resource.MustParse(".500"),
+			core.ResourceMemory: resource.MustParse("2Gi"),
+		},
+		Limits: core.ResourceList{
+			core.ResourceMemory: resource.MustParse("2Gi"),
 		},
 	}
 )
