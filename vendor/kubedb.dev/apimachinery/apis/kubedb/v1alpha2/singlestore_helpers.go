@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	kmapi "kmodules.xyz/client-go/api/v1"
 	"kmodules.xyz/client-go/apiextensions"
 	coreutil "kmodules.xyz/client-go/core/v1"
@@ -118,7 +119,36 @@ func (s singlestoreStatsService) Scheme() string {
 }
 
 func (s singlestoreStatsService) TLSConfig() *promapi.TLSConfig {
-	return nil
+	if s.Spec.TLS == nil {
+		return nil
+	}
+	return &promapi.TLSConfig{
+		SafeTLSConfig: promapi.SafeTLSConfig{
+			CA: promapi.SecretOrConfigMap{
+				Secret: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: s.GetCertSecretName(SinglestoreClientCert),
+					},
+					Key: CACert,
+				},
+			},
+			Cert: promapi.SecretOrConfigMap{
+				Secret: &core.SecretKeySelector{
+					LocalObjectReference: core.LocalObjectReference{
+						Name: s.GetCertSecretName(SinglestoreClientCert),
+					},
+					Key: core.TLSCertKey,
+				},
+			},
+			KeySecret: &core.SecretKeySelector{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: s.GetCertSecretName(SinglestoreClientCert),
+				},
+				Key: core.TLSPrivateKeyKey,
+			},
+			InsecureSkipVerify: ptr.To(false),
+		},
+	}
 }
 
 func (s Singlestore) StatsService() mona.StatsAccessor {
@@ -205,13 +235,16 @@ func (s *Singlestore) LeafPetSet() string {
 	return metautil.NameWithSuffix(ps, PetSetTypeLeaf)
 }
 
-func (s *Singlestore) PodLabels(extraLabels ...map[string]string) map[string]string {
-	return s.offshootLabels(metautil.OverwriteKeys(s.OffshootSelectors(), extraLabels...), s.Spec.PodTemplate.Labels)
+func (s *Singlestore) PodLabels(podTemplate *ofst.PodTemplateSpec, extraLabels ...map[string]string) map[string]string {
+	if podTemplate != nil && podTemplate.Labels != nil {
+		return s.offshootLabels(metautil.OverwriteKeys(s.OffshootSelectors(), extraLabels...), podTemplate.Labels)
+	}
+	return s.offshootLabels(metautil.OverwriteKeys(s.OffshootSelectors(), extraLabels...), nil)
 }
 
 func (s *Singlestore) PodLabel(podTemplate *ofst.PodTemplateSpec) map[string]string {
 	if podTemplate != nil && podTemplate.Labels != nil {
-		return s.offshootLabels(s.OffshootSelectors(), s.Spec.PodTemplate.Labels)
+		return s.offshootLabels(s.OffshootSelectors(), podTemplate.Labels)
 	}
 	return s.offshootLabels(s.OffshootSelectors(), nil)
 }
@@ -228,8 +261,11 @@ func (s *Singlestore) ServiceAccountName() string {
 	return s.OffshootName()
 }
 
-func (s *Singlestore) PodControllerLabels(extraLabels ...map[string]string) map[string]string {
-	return s.offshootLabels(metautil.OverwriteKeys(s.OffshootSelectors(), extraLabels...), s.Spec.PodTemplate.Controller.Labels)
+func (s *Singlestore) PodControllerLabels(podTemplate *ofst.PodTemplateSpec, extraLabels ...map[string]string) map[string]string {
+	if podTemplate != nil && podTemplate.Controller.Labels != nil {
+		return s.offshootLabels(metautil.OverwriteKeys(s.OffshootSelectors(), extraLabels...), podTemplate.Controller.Labels)
+	}
+	return s.offshootLabels(metautil.OverwriteKeys(s.OffshootSelectors(), extraLabels...), nil)
 }
 
 func (s *Singlestore) PodControllerLabel(podTemplate *ofst.PodTemplateSpec) map[string]string {
@@ -249,6 +285,23 @@ func (s *Singlestore) SetHealthCheckerDefaults() {
 	if s.Spec.HealthChecker.FailureThreshold == nil {
 		s.Spec.HealthChecker.FailureThreshold = pointer.Int32P(1)
 	}
+}
+
+// CertificateName returns the default certificate name and/or certificate secret name for a certificate alias
+func (s *Singlestore) CertificateName(alias SinglestoreCertificateAlias) string {
+	return metautil.NameWithSuffix(s.Name, fmt.Sprintf("%s-cert", string(alias)))
+}
+
+// GetCertSecretName returns the secret name for a certificate alias if any
+// otherwise returns default certificate secret name for the given alias.
+func (s *Singlestore) GetCertSecretName(alias SinglestoreCertificateAlias) string {
+	if s.Spec.TLS != nil {
+		name, ok := kmapi.GetCertificateSecretName(s.Spec.TLS.Certificates, string(alias))
+		if ok {
+			return name
+		}
+	}
+	return s.CertificateName(alias)
 }
 
 func (s *Singlestore) GetAuthSecretName() string {
@@ -273,14 +326,11 @@ func (s *Singlestore) SetDefaults() {
 	if s.Spec.StorageType == "" {
 		s.Spec.StorageType = StorageTypeDurable
 	}
-	if s.Spec.TerminationPolicy == "" {
-		s.Spec.TerminationPolicy = TerminationPolicyDelete
+	if s.Spec.DeletionPolicy == "" {
+		s.Spec.DeletionPolicy = TerminationPolicyDelete
 	}
 
 	if s.Spec.Topology == nil {
-		if s.Spec.Replicas == nil {
-			s.Spec.Replicas = pointer.Int32P(1)
-		}
 		if s.Spec.PodTemplate == nil {
 			s.Spec.PodTemplate = &ofst.PodTemplateSpec{}
 		}
@@ -459,11 +509,6 @@ func (s *Singlestore) SetTLSDefaults() {
 	}
 	s.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(s.Spec.TLS.Certificates, string(SinglestoreServerCert), s.CertificateName(SinglestoreServerCert))
 	s.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(s.Spec.TLS.Certificates, string(SinglestoreClientCert), s.CertificateName(SinglestoreClientCert))
-}
-
-// CertificateName returns the default certificate name and/or certificate secret name for a certificate alias
-func (s *Singlestore) CertificateName(alias SinglestoreCertificateAlias) string {
-	return metautil.NameWithSuffix(s.Name, fmt.Sprintf("%s-cert", string(alias)))
 }
 
 func (s *Singlestore) ReplicasAreReady(lister pslister.PetSetLister) (bool, string, error) {

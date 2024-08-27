@@ -231,8 +231,8 @@ func (s *Solr) PVCName(alias string) string {
 }
 
 func (s *Solr) SetDefaults(slVersion *catalog.SolrVersion) {
-	if s.Spec.TerminationPolicy == "" {
-		s.Spec.TerminationPolicy = TerminationPolicyDelete
+	if s.Spec.DeletionPolicy == "" {
+		s.Spec.DeletionPolicy = TerminationPolicyDelete
 	}
 
 	if s.Spec.StorageType == "" {
@@ -319,6 +319,16 @@ func (s *Solr) SetDefaults(slVersion *catalog.SolrVersion) {
 		s.Spec.PodTemplate.Spec.SecurityContext.FSGroup = slVersion.Spec.SecurityContext.RunAsUser
 		s.setDefaultContainerSecurityContext(slVersion, &s.Spec.PodTemplate)
 		s.setDefaultContainerResourceLimits(&s.Spec.PodTemplate)
+	}
+
+	if s.Spec.Monitor != nil {
+		if s.Spec.Monitor.Prometheus == nil {
+			s.Spec.Monitor.Prometheus = &mona.PrometheusSpec{}
+		}
+		if s.Spec.Monitor.Prometheus != nil && s.Spec.Monitor.Prometheus.Exporter.Port == 0 {
+			s.Spec.Monitor.Prometheus.Exporter.Port = SolrExporterPort
+		}
+		s.Spec.Monitor.SetDefaults()
 	}
 }
 
