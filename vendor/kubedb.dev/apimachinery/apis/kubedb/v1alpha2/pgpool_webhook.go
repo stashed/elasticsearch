@@ -31,6 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	kmapi "kmodules.xyz/client-go/api/v1"
+	appcat "kmodules.xyz/custom-resources/apis/appcatalog/v1alpha1"
 	ofst "kmodules.xyz/offshoot-api/api/v2"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -46,8 +47,6 @@ func (p *Pgpool) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		For(p).
 		Complete()
 }
-
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
 //+kubebuilder:webhook:path=/mutate-kubedb-com-v1alpha2-pgpool,mutating=true,failurePolicy=fail,sideEffects=None,groups=kubedb.com,resources=pgpools,verbs=create;update,versions=v1alpha2,name=mpgpool.kb.io,admissionReviewVersions=v1
 
@@ -90,7 +89,7 @@ func (p *Pgpool) ValidateDelete() (admission.Warnings, error) {
 	pgpoollog.Info("validate delete", "name", p.Name)
 
 	var errorList field.ErrorList
-	if p.Spec.TerminationPolicy == TerminationPolicyDoNotTerminate {
+	if p.Spec.DeletionPolicy == TerminationPolicyDoNotTerminate {
 		errorList = append(errorList, field.Invalid(field.NewPath("spec").Child("terminationPolicy"),
 			p.Name,
 			"Can not delete as terminationPolicy is set to \"DoNotTerminate\""))
@@ -118,6 +117,78 @@ func (p *Pgpool) ValidateCreateOrUpdate() field.ErrorList {
 		errorList = append(errorList, field.Required(field.NewPath("spec").Child("postgresRef"),
 			"`spec.postgresRef` is missing",
 		))
+	}
+
+	if p.Spec.ConfigSecret != nil && (p.Spec.InitConfiguration != nil && p.Spec.InitConfiguration.PgpoolConfig != nil) {
+		errorList = append(errorList, field.Invalid(field.NewPath("spec").Child("configSecret"),
+			p.Name,
+			"use either `spec.configSecret` or `spec.initConfig`"))
+		errorList = append(errorList, field.Invalid(field.NewPath("spec").Child("initConfig"),
+			p.Name,
+			"use either `spec.configSecret` or `spec.initConfig`"))
+	}
+
+	if p.Spec.ConfigSecret != nil {
+		secret := core.Secret{}
+		err := DefaultClient.Get(context.TODO(), types.NamespacedName{
+			Name:      p.Spec.ConfigSecret.Name,
+			Namespace: p.Namespace,
+		}, &secret)
+		if err != nil {
+			errorList = append(errorList, field.Invalid(field.NewPath("spec").Child("configSecret"),
+				p.Name,
+				err.Error(),
+			))
+		}
+		_, ok := secret.Data[PgpoolCustomConfigFile]
+		if !ok {
+			errorList = append(errorList, field.Invalid(field.NewPath("spec").Child("configSecret"),
+				p.Name,
+				fmt.Sprintf("`%v` is missing", PgpoolCustomConfigFile),
+			))
+		}
+	}
+
+	apb := appcat.AppBinding{}
+	err := DefaultClient.Get(context.TODO(), types.NamespacedName{
+		Name:      p.Spec.PostgresRef.Name,
+		Namespace: p.Spec.PostgresRef.Namespace,
+	}, &apb)
+	if err != nil {
+		errorList = append(errorList, field.Invalid(field.NewPath("spec").Child("postgresRef"),
+			p.Name,
+			err.Error(),
+		))
+	}
+
+	backendSSL, err := p.IsBackendTLSEnabled()
+	if err != nil {
+		errorList = append(errorList, field.Invalid(field.NewPath("spec").Child("postgresRef"),
+			p.Name,
+			err.Error(),
+		))
+	}
+
+	if p.Spec.TLS == nil && backendSSL {
+		errorList = append(errorList, field.Required(field.NewPath("spec").Child("tls"),
+			"`spec.tls` must be set because backend postgres is tls enabled",
+		))
+	}
+
+	if p.Spec.TLS == nil {
+		if p.Spec.SSLMode != "disable" {
+			errorList = append(errorList, field.Invalid(field.NewPath("spec").Child("sslMode"),
+				p.Name,
+				"Tls is not enabled, enable it to use this sslMode",
+			))
+		}
+
+		if p.Spec.ClientAuthMode == "cert" {
+			errorList = append(errorList, field.Invalid(field.NewPath("spec").Child("clientAuthMode"),
+				p.Name,
+				"Tls is not enabled, enable it to use this clientAuthMode",
+			))
+		}
 	}
 
 	if p.Spec.Replicas != nil {
@@ -207,6 +278,7 @@ func PgpoolValidateVersion(p *Pgpool) error {
 
 var PgpoolReservedVolumes = []string{
 	PgpoolConfigVolumeName,
+	PgpoolTlsVolumeName,
 }
 
 func PgpoolValidateVolumes(p *Pgpool) error {
@@ -278,4 +350,5 @@ func PgpoolValidateVolumesMountPaths(podTemplate *ofst.PodTemplateSpec) error {
 
 var PgpoolReservedVolumesMountPaths = []string{
 	PgpoolConfigSecretMountPath,
+	PgpoolTlsVolumeMountPath,
 }
