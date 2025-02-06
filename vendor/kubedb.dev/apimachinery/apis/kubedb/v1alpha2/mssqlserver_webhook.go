@@ -19,10 +19,13 @@ package v1alpha2
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	"kubedb.dev/apimachinery/apis/kubedb"
 
+	"gomodules.xyz/x/arrays"
+	core "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -92,7 +95,7 @@ func (m *MSSQLServer) ValidateDelete() (admission.Warnings, error) {
 	mssqllog.Info("validate delete", "name", m.Name)
 
 	var allErr field.ErrorList
-	if m.Spec.DeletionPolicy == TerminationPolicyDoNotTerminate {
+	if m.Spec.DeletionPolicy == DeletionPolicyDoNotTerminate {
 		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("terminationPolicy"),
 			m.Name,
 			"Can not delete as terminationPolicy is set to \"DoNotTerminate\""))
@@ -129,31 +132,24 @@ func (m *MSSQLServer) ValidateCreateOrUpdate() field.ErrorList {
 				m.Name,
 				"number of replicas can not be nil and can not be less than or equal to 0"))
 		}
-
-		if m.Spec.InternalAuth == nil {
-			allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("internalAuth"),
-				m.Name, "spec.internalAuth is missing"))
-		} else if m.Spec.InternalAuth.EndpointCert == nil {
-			allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("internalAuth").Child("endpointCert"),
-				m.Name, "spec.internalAuth.endpointCert is missing"))
-		} else {
-			if m.Spec.InternalAuth.EndpointCert.IssuerRef == nil {
-				allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("internalAuth").Child("endpointCert").Child("issuerRef"),
-					m.Name, "spec.internalAuth.endpointCert.issuerRef' is missing"))
-			}
-			if len(m.Spec.InternalAuth.EndpointCert.Certificates) > 1 {
-				allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("internalAuth").Child("endpointCert").Child("certificates"),
-					m.Name, "spec.internalAuth.endpointCert.certificates' can have only one certificate"))
-			}
-		}
 	}
 
 	if m.Spec.TLS == nil {
 		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("tls"),
 			m.Name, "spec.tls is missing"))
-	} else if m.Spec.TLS.IssuerRef == nil {
-		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("tls").Child("issuerRef"),
-			m.Name, "spec.tls.issuerRef' is missing"))
+	} else {
+		if m.Spec.TLS.IssuerRef == nil {
+			allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("tls").Child("issuerRef"),
+				m.Name, "spec.tls.issuerRef' is missing"))
+		}
+	}
+
+	if m.Spec.PodTemplate != nil {
+		if err = ValidateMSSQLServerEnvVar(getMSSQLServerContainerEnvs(m), forbiddenMSSQLServerEnvVars, m.ResourceKind()); err != nil {
+			allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("podTemplate"),
+				m.Name,
+				err.Error()))
+		}
 	}
 
 	err = mssqlValidateVolumes(m.Spec.PodTemplate)
@@ -191,23 +187,25 @@ func (m *MSSQLServer) ValidateCreateOrUpdate() field.ErrorList {
 
 // reserved volume and volumes mounts for mssql
 var mssqlReservedVolumes = []string{
-	MSSQLVolumeNameData,
-	MSSQLVolumeNameInitScript,
-	MSSQLVolumeNameEndpointCert,
-	MSSQLVolumeNameCerts,
-	MSSQLVolumeNameTLS,
-	MSSQLVolumeNameSecurityCACertificates,
-	MSSQLVolumeNameCACerts,
+	kubedb.MSSQLVolumeNameData,
+	kubedb.MSSQLVolumeNameConfig,
+	kubedb.MSSQLVolumeNameInitScript,
+	kubedb.MSSQLVolumeNameEndpointCert,
+	kubedb.MSSQLVolumeNameCerts,
+	kubedb.MSSQLVolumeNameTLS,
+	kubedb.MSSQLVolumeNameSecurityCACertificates,
+	kubedb.MSSQLVolumeNameCACerts,
 }
 
 var mssqlReservedVolumesMountPaths = []string{
-	MSSQLVolumeMountPathData,
-	MSSQLVolumeMountPathInitScript,
-	MSSQLVolumeMountPathEndpointCert,
-	MSSQLVolumeMountPathCerts,
-	MSSQLVolumeMountPathTLS,
-	MSSQLVolumeMountPathSecurityCACertificates,
-	MSSQLVolumeMountPathCACerts,
+	kubedb.MSSQLVolumeMountPathData,
+	kubedb.MSSQLVolumeMountPathConfig,
+	kubedb.MSSQLVolumeMountPathInitScript,
+	kubedb.MSSQLVolumeMountPathEndpointCert,
+	kubedb.MSSQLVolumeMountPathCerts,
+	kubedb.MSSQLVolumeMountPathTLS,
+	kubedb.MSSQLVolumeMountPathSecurityCACertificates,
+	kubedb.MSSQLVolumeMountPathCACerts,
 }
 
 func mssqlValidateVersion(m *MSSQLServer) error {
@@ -272,5 +270,39 @@ func mssqlValidateVolumesMountPaths(podTemplate *ofst.PodTemplateSpec) error {
 		}
 	}
 
+	return nil
+}
+
+var forbiddenMSSQLServerEnvVars = []string{
+	kubedb.EnvMSSQLSAUsername,
+	kubedb.EnvMSSQLSAPassword,
+	kubedb.EnvMSSQLEnableHADR,
+	kubedb.EnvMSSQLAgentEnabled,
+	kubedb.EnvMSSQLVersion,
+}
+
+func getMSSQLServerContainerEnvs(m *MSSQLServer) []core.EnvVar {
+	for _, container := range m.Spec.PodTemplate.Spec.Containers {
+		if container.Name == kubedb.MSSQLContainerName {
+			return container.Env
+		}
+	}
+	return []core.EnvVar{}
+}
+
+func ValidateMSSQLServerEnvVar(envs []core.EnvVar, forbiddenEnvs []string, resourceType string) error {
+	presentMSSQL_PID := false
+	for _, env := range envs {
+		present, _ := arrays.Contains(forbiddenEnvs, env.Name)
+		if present {
+			return fmt.Errorf("environment variable %s is forbidden to use in %s spec", env.Name, resourceType)
+		}
+		if env.Name == "MSSQL_PID" {
+			presentMSSQL_PID = true
+		}
+	}
+	if !presentMSSQL_PID {
+		return fmt.Errorf("environment variable %s must be provided in %s spec", kubedb.EnvMSSQLPid, resourceType)
+	}
 	return nil
 }
