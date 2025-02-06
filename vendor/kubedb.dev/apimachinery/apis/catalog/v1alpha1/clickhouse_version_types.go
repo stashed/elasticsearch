@@ -27,9 +27,6 @@ const (
 	ResourcePluralClickHouseVersion   = "clickhouseversions"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // ClickHouseVersion defines a ClickHouse database version.
 
 // +genclient
@@ -39,7 +36,7 @@ const (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=clickhouseversions,singular=clickhouseversion,scope=Cluster,shortName=chversion,categories={datastore,kubedb,appscode}
+// +kubebuilder:resource:path=clickhouseversions,singular=clickhouseversion,scope=Cluster,shortName=chversion,categories={catalog,kubedb,appscode}
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version"
 // +kubebuilder:printcolumn:name="DB_IMAGE",type="string",JSONPath=".spec.db.image"
 // +kubebuilder:printcolumn:name="Deprecated",type="boolean",JSONPath=".spec.deprecated"
@@ -66,9 +63,15 @@ type ClickHouseVersionSpec struct {
 	// Database Image
 	InitContainer ClickHouseInitContainer `json:"initContainer"`
 
+	// ClickHouse Keeper Image
+	ClickHouseKeeper ClickHouseKeeperContainer `json:"clickHouseKeeper"`
+
 	// SecurityContext is for the additional config for the DB container
 	// +optional
 	SecurityContext SecurityContext `json:"securityContext"`
+
+	// +optional
+	UI []ChartInfo `json:"ui,omitempty"`
 }
 
 // ClickHouseVersionDatabase is the ClickHouse Database image
@@ -78,6 +81,11 @@ type ClickHouseVersionDatabase struct {
 
 // ClickHouseInitContainer is the ClickHouse init Container image
 type ClickHouseInitContainer struct {
+	Image string `json:"image"`
+}
+
+// ClickHouseKeeperContainer is the ClickHouse keeper Container image
+type ClickHouseKeeperContainer struct {
 	Image string `json:"image"`
 }
 

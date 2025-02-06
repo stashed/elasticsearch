@@ -27,7 +27,7 @@ import (
 
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	esapi "kubedb.dev/apimachinery/apis/elasticsearch/v1alpha1"
-	"kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
+	dbapi "kubedb.dev/apimachinery/apis/kubedb/v1"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/go-resty/resty/v2"
@@ -41,7 +41,7 @@ import (
 type KubeDBClientBuilder struct {
 	kc            client.Client
 	dashboard     *esapi.ElasticsearchDashboard
-	db            *v1alpha2.Elasticsearch
+	db            *dbapi.Elasticsearch
 	dbVersion     *catalog.ElasticsearchVersion
 	dbVersionInfo *DbVersionInfo
 	authSecret    *core.Secret
@@ -72,7 +72,7 @@ func (o *KubeDBClientBuilder) WithAuthSecret(secret *core.Secret) *KubeDBClientB
 	return o
 }
 
-func (o *KubeDBClientBuilder) WithDatabaseRef(db *v1alpha2.Elasticsearch) *KubeDBClientBuilder {
+func (o *KubeDBClientBuilder) WithDatabaseRef(db *dbapi.Elasticsearch) *KubeDBClientBuilder {
 	o.db = db
 	return o
 }

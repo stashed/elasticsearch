@@ -20,6 +20,7 @@ import (
 	"context"
 
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
+	"kubedb.dev/apimachinery/apis/kubedb"
 
 	"github.com/pkg/errors"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -77,7 +78,7 @@ func (s *Singlestore) ValidateDelete() (admission.Warnings, error) {
 	singlestorelog.Info("validate delete", "name", s.Name)
 
 	var allErr field.ErrorList
-	if s.Spec.DeletionPolicy == TerminationPolicyDoNotTerminate {
+	if s.Spec.DeletionPolicy == DeletionPolicyDoNotTerminate {
 		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("terminationPolicy"),
 			s.Name,
 			"Can not delete as terminationPolicy is set to \"DoNotTerminate\""))
@@ -198,19 +199,19 @@ func (s *Singlestore) ValidateCreateOrUpdate() field.ErrorList {
 
 // reserved volume and volumes mounts for singlestore
 var sdbReservedVolumes = []string{
-	SinglestoreVolumeNameUserInitScript,
-	SinglestoreVolumeNameCustomConfig,
-	SinglestoreVolmeNameInitScript,
-	SinglestoreVolumeNameData,
-	SinglestoreVolumeNameTLS,
+	kubedb.SinglestoreVolumeNameUserInitScript,
+	kubedb.SinglestoreVolumeNameCustomConfig,
+	kubedb.SinglestoreVolmeNameInitScript,
+	kubedb.SinglestoreVolumeNameData,
+	kubedb.SinglestoreVolumeNameTLS,
 }
 
 var sdbReservedVolumesMountPaths = []string{
-	SinglestoreVolumeMountPathData,
-	SinglestoreVolumeMountPathInitScript,
-	SinglestoreVolumeMountPathCustomConfig,
-	SinglestoreVolumeMountPathUserInitScript,
-	SinglestoreVolumeMountPathTLS,
+	kubedb.SinglestoreVolumeMountPathData,
+	kubedb.SinglestoreVolumeMountPathInitScript,
+	kubedb.SinglestoreVolumeMountPathCustomConfig,
+	kubedb.SinglestoreVolumeMountPathUserInitScript,
+	kubedb.SinglestoreVolumeMountPathTLS,
 }
 
 func sdbValidateVersion(s *Singlestore) error {

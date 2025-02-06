@@ -14,15 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1alpha2
+package kubedb
 
 import (
+	"fmt"
 	"time"
-
-	"kubedb.dev/apimachinery/apis/kubedb"
 
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	meta_util "kmodules.xyz/client-go/meta"
+	skapi "kubeops.dev/sidekick/apis/apps/v1alpha1"
 )
 
 const (
@@ -31,8 +32,8 @@ const (
 
 	KubeDBOrganization = "kubedb"
 
-	LabelRole   = kubedb.GroupName + "/role"
-	LabelPetSet = kubedb.GroupName + "/petset"
+	LabelRole   = GroupName + "/role"
+	LabelPetSet = GroupName + "/petset"
 
 	ReplicationModeDetectorContainerName = "replication-mode-detector"
 	DatabasePodPrimary                   = "primary"
@@ -58,16 +59,19 @@ const (
 	CACert = "ca.crt"
 
 	// =========================== Database key Constants ============================
-	PostgresKey      = ResourceSingularPostgres + "." + kubedb.GroupName
-	ElasticsearchKey = ResourceSingularElasticsearch + "." + kubedb.GroupName
-	MySQLKey         = ResourceSingularMySQL + "." + kubedb.GroupName
-	MariaDBKey       = ResourceSingularMariaDB + "." + kubedb.GroupName
-	PerconaXtraDBKey = ResourceSingularPerconaXtraDB + "." + kubedb.GroupName
-	MongoDBKey       = ResourceSingularMongoDB + "." + kubedb.GroupName
-	RedisKey         = ResourceSingularRedis + "." + kubedb.GroupName
-	MemcachedKey     = ResourceSingularMemcached + "." + kubedb.GroupName
-	EtcdKey          = ResourceSingularEtcd + "." + kubedb.GroupName
-	ProxySQLKey      = ResourceSingularProxySQL + "." + kubedb.GroupName
+	PostgresKey      = "postgres" + "." + GroupName
+	ElasticsearchKey = "elasticsearch" + "." + GroupName
+	MySQLKey         = "mysql" + "." + GroupName
+	MariaDBKey       = "mariadb" + "." + GroupName
+	PerconaXtraDBKey = "perconaxtradb" + "." + GroupName
+	MongoDBKey       = "mongodb" + "." + GroupName
+	RedisKey         = "redis" + "." + GroupName
+	MemcachedKey     = "memcached" + "." + GroupName
+	EtcdKey          = "etcd" + "." + GroupName
+	ProxySQLKey      = "proxysql" + "." + GroupName
+
+	// Auth related constants
+	AuthActiveFromAnnotation = GroupName + "/auth-active-from"
 
 	// =========================== Elasticsearch Constants ============================
 	ElasticsearchRestPort                        = 9200
@@ -125,13 +129,42 @@ const (
 	ElasticsearchMinHeapSize = 128 * 1024 * 1024
 
 	// =========================== Memcached Constants ============================
-	MemcachedConfigKey              = "memcached.conf" // MemcachedConfigKey is going to create for the customize redis configuration
+
+	MemcachedConfigKey              = "memcached.conf" // MemcachedConfigKey is going to create for the customize memcached configuration
+	MemcachedDefaultKey             = "default.conf"   //
 	MemcachedDatabasePortName       = "db"
 	MemcachedPrimaryServicePortName = "primary"
 	MemcachedDatabasePort           = 11211
-	MemcachedShardKey               = MemcachedKey + "/shard"
-	MemcachedContainerName          = ResourceSingularMemcached
-	MemcachedConfigVolumePath       = "/etc/memcached/"
+	MemcachedContainerName          = "memcached"
+	MemcachedExporterContainerName  = "exporter"
+
+	MemcachedConfigVolumeName = "memcached-config"
+	MemcachedConfigVolumePath = "/usr/config/"
+
+	MemcachedDataVolumeName = "data"
+	MemcachedDataVolumePath = "/usr/data/"
+
+	MemcachedAuthVolumeName = "auth"
+	MemcachedAuthVolumePath = "/usr/auth/"
+
+	MemcachedExporterAuthVolumeName = "exporter-auth"
+	MemcachedExporterAuthVolumePath = "/auth/"
+
+	// AuthDataKey store Username Password Pairs.
+	AuthDataKey = "authData"
+
+	MemcachedExporterTLSVolumeName = "exporter-tls"
+	MemcachedExporterTLSVolumePath = "/certs/"
+
+	MemcachedTLSVolumeName = "tls"
+	MemcachedTLSVolumePath = "/usr/certs/"
+
+	MemcachedHealthKey   = "kubedb_memcached_health_key"
+	MemcachedHealthValue = "kubedb_memcached_health_value"
+
+	MemcachedUserName = "user"
+	MemcachedPassword = "pass"
+
 	// =========================== MongoDB Constants ============================
 
 	MongoDBDatabasePortName       = "db"
@@ -182,7 +215,7 @@ const (
 	MongoDBInitialKeyDirectoryName = "keydir"
 	MongoDBInitialKeyDirectoryPath = "/keydir-readonly"
 
-	MongoDBContainerName = ResourceSingularMongoDB
+	MongoDBContainerName = "mongodb"
 
 	MongoDBDefaultVolumeClaimTemplateName = MongoDBDataDirectoryName
 
@@ -285,7 +318,7 @@ const (
 	PerconaXtraDBRunScriptVolumeMountPath      = "/run-script"
 	PerconaXtraDBInitScriptVolumeName          = "init-scripts"
 	PerconaXtraDBInitScriptVolumeMountPath     = "/scripts"
-	PerconaXtraDBContainerName                 = ResourceSingularPerconaXtraDB
+	PerconaXtraDBContainerName                 = "perconaxtradb"
 	PerconaXtraDBCertMountPath                 = "/etc/mysql/certs"
 	PerconaXtraDBExporterConfigFileName        = "exporter.cnf"
 	PerconaXtraDBGaleraClusterPrimaryComponent = "Primary"
@@ -315,7 +348,7 @@ const (
 	MariaDBRunScriptVolumeMountPath      = "/run-script"
 	MariaDBInitScriptVolumeName          = "init-scripts"
 	MariaDBInitScriptVolumeMountPath     = "/scripts"
-	MariaDBContainerName                 = ResourceSingularMariaDB
+	MariaDBContainerName                 = "mariadb"
 	MariaDBCertMountPath                 = "/etc/mysql/certs"
 	MariaDBExporterConfigFileName        = "exporter.cnf"
 	MariaDBGaleraClusterPrimaryComponent = "Primary"
@@ -370,28 +403,32 @@ const (
 	SinglestoreTLSConfigPreferred  = "preferred"
 
 	// =========================== MSSQLServer Constants ============================
-	MSSQLSAUser = "sa"
+	MSSQLSAUser    = "sa"
+	MSSQLConfigKey = "mssql.conf"
 
 	AGPrimaryReplicaReadyCondition = "AGPrimaryReplicaReady"
 
-	MSSQLDatabasePodPrimary       = "primary"
-	MSSQLDatabasePodSecondary     = "secondary"
-	MSSQLSecondaryServiceAlias    = "secondary"
-	MSSQLSecondaryServicePortName = "secondary"
+	MSSQLDatabasePodPrimary    = "primary"
+	MSSQLDatabasePodSecondary  = "secondary"
+	MSSQLSecondaryServiceAlias = "secondary"
 
 	// port related
 	MSSQLDatabasePortName              = "db"
 	MSSQLPrimaryServicePortName        = "primary"
+	MSSQLSecondaryServicePortName      = "secondary"
 	MSSQLDatabasePort                  = 1433
 	MSSQLDatabaseMirroringEndpointPort = 5022
 	MSSQLCoordinatorPort               = 2381
+	MSSQLMonitoringDefaultServicePort  = 9399
 
 	// environment variables
 	EnvAcceptEula        = "ACCEPT_EULA"
+	EnvMSSQLPid          = "MSSQL_PID"
 	EnvMSSQLEnableHADR   = "MSSQL_ENABLE_HADR"
 	EnvMSSQLAgentEnabled = "MSSQL_AGENT_ENABLED"
 	EnvMSSQLSAUsername   = "MSSQL_SA_USERNAME"
 	EnvMSSQLSAPassword   = "MSSQL_SA_PASSWORD"
+	EnvMSSQLVersion      = "VERSION"
 
 	// container related
 	MSSQLContainerName            = "mssql"
@@ -401,6 +438,8 @@ const (
 	// volume related
 	MSSQLVolumeNameData                        = "data"
 	MSSQLVolumeMountPathData                   = "/var/opt/mssql"
+	MSSQLVolumeNameConfig                      = "config"
+	MSSQLVolumeMountPathConfig                 = "/var/opt/mssql/mssql.conf"
 	MSSQLVolumeNameInitScript                  = "init-scripts"
 	MSSQLVolumeMountPathInitScript             = "/scripts"
 	MSSQLVolumeNameEndpointCert                = "endpoint-cert"
@@ -431,7 +470,7 @@ const (
 	PostgresCoordinatorContainerName  = "pg-coordinator"
 	PostgresCoordinatorPort           = 2380
 	PostgresCoordinatorPortName       = "coordinator"
-	PostgresContainerName             = ResourceSingularPostgres
+	PostgresContainerName             = "postgres"
 	PostgresInitContainerName         = "postgres-init-container"
 	PostgresCoordinatorClientPort     = 2379
 	PostgresCoordinatorClientPortName = "coordinatclient"
@@ -484,7 +523,7 @@ const (
 	LabelProxySQLLoadBalance           = ProxySQLKey + "/load-balance"
 	LabelProxySQLLoadBalanceStandalone = "Standalone"
 
-	ProxySQLContainerName          = ResourceSingularProxySQL
+	ProxySQLContainerName          = "proxysql"
 	ProxySQLDatabasePort           = 6033
 	ProxySQLDatabasePortName       = "db"
 	ProxySQLPrimaryServicePortName = "db"
@@ -507,7 +546,7 @@ const (
 	// =========================== Redis Constants ============================
 	RedisConfigKey = "redis.conf" // RedisConfigKey is going to create for the customize redis configuration
 	// DefaultConfigKey is going to create for the default redis configuration
-	RedisContainerName             = ResourceSingularRedis
+	RedisContainerName             = "redis"
 	RedisSentinelContainerName     = "redissentinel"
 	DefaultConfigKey               = "default.conf"
 	RedisShardKey                  = RedisKey + "/shard"
@@ -563,9 +602,20 @@ const (
 	PgBouncerDatabasePort                   = 5432
 	PgBouncerConfigFile                     = "pgbouncer.ini"
 	PgBouncerAdminUsername                  = "pgbouncer"
+	PgBouncerContainerName                  = "pgbouncer"
 	PgBouncerDefaultPoolMode                = "session"
 	PgBouncerDefaultIgnoreStartupParameters = "empty"
 	BackendSecretResourceVersion            = "backend-secret-resource-version"
+	PgBouncerAdminDatabase                  = "pgbouncer"
+	PgBouncerUserDataKey                    = "userlist"
+	PgBouncerAuthSecretVolume               = "user-secret"
+	PgBouncerConfigMountPath                = "/etc/config"
+	PgBouncerSecretMountPath                = "/var/run/pgbouncer/secret"
+	PgBouncerServingCertMountPath           = "/var/run/pgbouncer/tls/serving"
+	PgBouncerConfigSectionDatabases         = "databases"
+	PgBouncerConfigSectionPeers             = "peers"
+	PgBouncerConfigSectionPgbouncer         = "pgbouncer"
+	PgBouncerConfigSectionUsers             = "users"
 
 	// =========================== Pgpool Constants ============================
 	EnvPostgresUsername                = "POSTGRES_USERNAME"
@@ -612,21 +662,41 @@ const (
 	ZooKeeperMetricsPortName        = "metrics"
 	ZooKeeperMetricsPort            = 7000
 	ZooKeeperAdminServerPortName    = "admin-server"
+	ZooKeeperSecureClientPortName   = "secure-client"
 	ZooKeeperAdminServerPort        = 8080
+	ZooKeeperSecureClientPort       = 2182
 	ZooKeeperNode                   = "/kubedb_health_checker_node"
 	ZooKeeperData                   = "kubedb_health_checker_data"
 	ZooKeeperConfigVolumeName       = "zookeeper-config"
 	ZooKeeperConfigVolumePath       = "/conf"
+	ZooKeeperVolumeTempConfig       = "temp-config"
 	ZooKeeperDataVolumeName         = "data"
 	ZooKeeperDataVolumePath         = "/data"
 	ZooKeeperScriptVolumeName       = "script-vol"
 	ZooKeeperScriptVolumePath       = "/scripts"
-	ZooKeeperContainerName          = ResourceSingularZooKeeper
-	ZooKeeperInitContainerName      = ResourceSingularZooKeeper + "-init"
+	ZooKeeperContainerName          = "zookeeper"
+	ZooKeeperUserAdmin              = "admin"
+	ZooKeeperInitContainerName      = "zookeeper" + "-init"
 
 	ZooKeeperConfigFileName               = "zoo.cfg"
 	ZooKeeperLog4jPropertiesFileName      = "log4j.properties"
 	ZooKeeperLog4jQuietPropertiesFileName = "log4j-quiet.properties"
+
+	ZooKeeperCertDir       = "/var/private/ssl"
+	ZooKeeperKeyStoreDir   = "/var/private/ssl/server.keystore.jks"
+	ZooKeeperTrustStoreDir = "/var/private/ssl/server.truststore.jks"
+
+	ZooKeeperKeystoreKey           = "keystore.jks"
+	ZooKeeperTruststoreKey         = "truststore.jks"
+	ZooKeeperServerKeystoreKey     = "server.keystore.jks"
+	ZooKeeperServerTruststoreKey   = "server.truststore.jks"
+	ZooKeeperKeyPassword           = "ssl.key.password"
+	ZooKeeperKeystorePasswordKey   = "ssl.quorum.keyStore.password"
+	ZooKeeperTruststorePasswordKey = "ssl.quorum.trustStore.password"
+	ZooKeeperKeystoreLocationKey   = "ssl.quorum.keyStore.location"
+	ZooKeeperTruststoreLocationKey = "ssl.quorum.trustStore.location"
+
+	ZooKeeperSSLPropertiesFileName = "ssl.properties"
 
 	EnvZooKeeperDomain          = "DOMAIN"
 	EnvZooKeeperQuorumPort      = "QUORUM_PORT"
@@ -677,6 +747,12 @@ const (
 	DatabaseReadAccess = "DatabaseReadAccess"
 	// user for databases that have write access
 	DatabaseWriteAccess = "DatabaseWriteAccess"
+	// check dependencies are ready
+	DatabaseDependencyReady = "DatabaseDependencyReady"
+	// update config secret for backup in solr
+	PatchConfigSecretUpdateForBackup = "PatchConfigSecretUpdatesForBackup"
+	// sync db to update configuration
+	SyncDatabaseForConfigurationUpdate = "SyncDatabaseForConfigurationUpdate"
 
 	// Condition reasons
 	DataRestoreStartedByExternalInitializer    = "DataRestoreStartedByExternalInitializer"
@@ -698,6 +774,7 @@ const (
 	DatabaseWriteAccessCheckFailed             = "DatabaseWriteAccessCheckFailed"
 	InternalUsersCredentialSyncFailed          = "InternalUsersCredentialsSyncFailed"
 	InternalUsersCredentialsSyncedSuccessfully = "InternalUsersCredentialsSyncedSuccessfully"
+	FailedToEnsureDependency                   = "FailedToEnsureDependency"
 )
 
 const (
@@ -759,6 +836,7 @@ const (
 	KafkaListenerSecurityProtocolMap       = "listener.security.protocol.map"
 	KafkaControllerNodeCount               = "controller.count"
 	KafkaControllerQuorumVoters            = "controller.quorum.voters"
+	KafkaControllerQuorumBootstrapServers  = "controller.quorum.bootstrap.servers"
 	KafkaControllerListenersName           = "controller.listener.names"
 	KafkaInterBrokerListener               = "inter.broker.listener.name"
 	KafkaNodeRole                          = "process.roles"
@@ -766,8 +844,6 @@ const (
 	KafkaClientID                          = "client.id"
 	KafkaDataDirName                       = "log.dirs"
 	KafkaMetadataDirName                   = "metadata.log.dir"
-	KafkaKeystorePasswordKey               = "keystore_password"
-	KafkaTruststorePasswordKey             = "truststore_password"
 	KafkaServerKeystoreKey                 = "server.keystore.jks"
 	KafkaServerTruststoreKey               = "server.truststore.jks"
 	KafkaSecurityProtocol                  = "security.protocol"
@@ -781,16 +857,18 @@ const (
 	KafkaPartitionMetricsWindowNum         = "num.partition.metrics.windows"
 	KafkaSampleStoreTopicReplicationFactor = "sample.store.topic.replication.factor"
 
-	KafkaEndpointVerifyAlgo  = "ssl.endpoint.identification.algorithm"
-	KafkaKeystoreLocation    = "ssl.keystore.location"
-	KafkaTruststoreLocation  = "ssl.truststore.location"
-	KafkaKeystorePassword    = "ssl.keystore.password"
-	KafkaTruststorePassword  = "ssl.truststore.password"
-	KafkaKeyPassword         = "ssl.key.password"
-	KafkaTruststoreType      = "ssl.truststore.type"
-	KafkaKeystoreType        = "ssl.keystore.type"
-	KafkaTruststoreTypeJKS   = "JKS"
-	KafkaKeystoreDefaultPass = "changeit"
+	KafkaEndpointVerifyAlgo     = "ssl.endpoint.identification.algorithm"
+	KafkaKeystoreLocation       = "ssl.keystore.location"
+	KafkaTruststoreLocation     = "ssl.truststore.location"
+	KafkaKeystorePassword       = "ssl.keystore.password"
+	KafkaTruststorePassword     = "ssl.truststore.password"
+	KafkaKeyPassword            = "ssl.key.password"
+	KafkaTruststoreType         = "ssl.truststore.type"
+	KafkaKeystoreType           = "ssl.keystore.type"
+	KafkaSSLClientAuthKey       = "ssl.client.auth"
+	KafkaSSLClientAuthRequired  = "required"
+	KafkaSSLClientAuthRequested = "requested"
+	KafkaTruststoreTypeJKS      = "JKS"
 
 	KafkaMetricReporters       = "metric.reporters"
 	KafkaAutoCreateTopicEnable = "auto.create.topics.enable"
@@ -801,9 +879,14 @@ const (
 	KafkaSASLInterBrokerProtocol     = "sasl.mechanism.inter.broker.protocol"
 	KafkaSASLPLAINConfigKey          = "listener.name.SASL_PLAINTEXT.plain.sasl.jaas.config"
 	KafkaSASLSSLConfigKey            = "listener.name.SASL_SSL.plain.sasl.jaas.config"
+	KafkaAuthorizerClassName         = "authorizer.class.name"
+	KafkaSuperUsers                  = "super.users"
+	KafkaStandardAuthorizerClass     = "org.apache.kafka.metadata.authorizer.StandardAuthorizer"
 	KafkaSASLJAASConfig              = "sasl.jaas.config"
 	KafkaServiceName                 = "serviceName"
 	KafkaSASLPlainMechanism          = "PLAIN"
+	KafkaSASLScramSHA256Mechanism    = "SCRAM-SHA-256"
+	KafkaSASLScramSHA512Mechanism    = "SCRAM-SHA-512"
 
 	KafkaCCMetricSamplerClass            = "metric.sampler.class"
 	KafkaCCCapacityConfig                = "capacity.config.file"
@@ -830,8 +913,9 @@ const (
 	KafkaVolumeTempConfig   = "temp-config"
 	KafkaVolumeCustomConfig = "custom-config"
 
-	EnvKafkaUser     = "KAFKA_USER"
-	EnvKafkaPassword = "KAFKA_PASSWORD"
+	EnvKafkaUser      = "KAFKA_USER"
+	EnvKafkaPassword  = "KAFKA_PASSWORD"
+	EnvKafkaClusterID = "KAFKA_CLUSTER_ID"
 
 	KafkaListenerPLAINTEXTProtocol = "PLAINTEXT"
 	KafkaListenerSASLProtocol      = "SASL_PLAINTEXT"
@@ -843,10 +927,6 @@ const (
 	KafkaJMXMetricReporter        = "org.apache.kafka.common.metrics.JmxReporter"
 
 	// =========================== Solr Constants ============================
-	ResourceCodeSolr      = "sl"
-	ResourceKindSolr      = "Solr"
-	ResourceSingularSolr  = "solr"
-	ResourcePluralSolr    = "solrs"
 	SolrPortName          = "http"
 	SolrRestPort          = 8983
 	SolrExporterPort      = 9854
@@ -914,6 +994,20 @@ const (
 	SolrConfAllowPathsValue        = ""
 	SolrConfSolrCloudKey           = "solrcloud"
 	SolrConfShardHandlerFactoryKey = "shardHandlerFactory"
+	SolrJavaMem                    = "-Xms3g -Xmx3g"
+	SolrKeystorePassKey            = "keystore-secret"
+	SolrServerKeystorePath         = "/var/solr/etc/keystore.p12"
+	SolrServerTruststorePath       = "/var/solr/etc/truststore.p12"
+	SolrTLSMountPath               = "/var/solr/etc"
+
+	ProxyDeploymentName = "s3proxy"
+	ProxyServiceName    = "proxy-svc"
+	ProxySecretName     = "proxy-env"
+	ProxyImage          = "andrewgaul/s3proxy"
+	ProxyPortName       = "http"
+	ProxyPortNumber     = 80
+	ProxyContainerName  = "proxy"
+	ProxyLabelsApp      = "app"
 )
 
 // =========================== Druid Constants ============================
@@ -926,13 +1020,16 @@ const (
 	DruidConfigDirRouters             = "/opt/druid/conf/druid/cluster/query/router"
 	DruidCConfigDirMySQLMetadata      = "/opt/druid/extensions/mysql-metadata-storage"
 
-	DruidVolumeOperatorConfig = "operator-config-volume"
-	DruidVolumeMainConfig     = "main-config-volume"
-	DruidVolumeCustomConfig   = "custom-config"
+	DruidVolumeOperatorConfig  = "operator-config-volume"
+	DruidVolumeMainConfig      = "main-config-volume"
+	DruidVolumeCustomConfig    = "custom-config"
+	DruidMetadataTLSVolume     = "metadata-tls-volume"
+	DruidMetadataTLSTempVolume = "metadata-tls-volume-temp"
 
-	DruidOperatorConfigDir = "/tmp/config/operator-config"
-	DruidMainConfigDir     = "/opt/druid/conf"
-	DruidCustomConfigDir   = "/tmp/config/custom-config"
+	DruidOperatorConfigDir        = "/tmp/config/operator-config"
+	DruidMainConfigDir            = "/opt/druid/conf"
+	DruidCustomConfigDir          = "/tmp/config/custom-config"
+	DruidMetadataTLSTempConfigDir = "/tmp/metadata-tls"
 
 	DruidVolumeCommonConfig          = "common-config-volume"
 	DruidCommonConfigFile            = "common.runtime.properties"
@@ -956,17 +1053,30 @@ const (
 	EnvDruidMetdataStoragePassword = "DRUID_METADATA_STORAGE_PASSWORD"
 	EnvDruidZKServicePassword      = "DRUID_ZK_SERVICE_PASSWORD"
 	EnvDruidCoordinatorAsOverlord  = "DRUID_COORDINATOR_AS_OVERLORD"
+	EnvDruidMetadataTLSEnable      = "DRUID_METADATA_TLS_ENABLE"
+	EnvDruidMetadataStorageType    = "DRUID_METADATA_STORAGE_TYPE"
+	EnvDruidKeyStorePassword       = "DRUID_KEY_STORE_PASSWORD"
 
-	DruidPortCoordinators   = 8081
-	DruidPortOverlords      = 8090
-	DruidPortHistoricals    = 8083
-	DruidPortMiddleManagers = 8091
-	DruidPortBrokers        = 8082
-	DruidPortRouters        = 8888
-	DruidExporterPort       = 9104
+	DruidPlainTextPortCoordinators   = 8081
+	DruidPlainTextPortOverlords      = 8090
+	DruidPlainTextPortHistoricals    = 8083
+	DruidPlainTextPortMiddleManagers = 8091
+	DruidPlainTextPortBrokers        = 8082
+	DruidPlainTextPortRouters        = 8888
+
+	DruidTLSPortCoordinators   = 8281
+	DruidTLSPortOverlords      = 8290
+	DruidTLSPortHistoricals    = 8283
+	DruidTLSPortMiddleManagers = 8291
+	DruidTLSPortBrokers        = 8282
+	DruidTLSPortRouters        = 9088
+
+	DruidExporterPort = 9104
+
+	DruidMetadataStorageTypePostgres = "Postgres"
 
 	// Common Runtime Configurations Properties
-	// ZooKeeperSpec
+	// ZooKeeper
 	DruidZKServiceHost              = "druid.zk.service.host"
 	DruidZKPathsBase                = "druid.zk.paths.base"
 	DruidZKServiceCompress          = "druid.zk.service.compress"
@@ -983,6 +1093,50 @@ const (
 	DruidMetadataStorageConnectorPassword          = "druid.metadata.storage.connector.password"
 	DruidMetadataStorageConnectorPasswordEnvConfig = "{\"type\": \"environment\", \"variable\": \"DRUID_METADATA_STORAGE_PASSWORD\"}"
 	DruidMetadataStorageCreateTables               = "druid.metadata.storage.connector.createTables"
+
+	// Druid TLS
+	DruidKeystorePasswordKey   = "keystore_password"
+	DruidTrustStorePasswordKey = "truststore_password"
+	DruidKeystoreSecretKey     = "keystore-cred"
+
+	DruidEnablePlaintextPort      = "druid.enablePlaintextPort"
+	DruidEnableTLSPort            = "druid.enableTlsPort"
+	DruidKeyStorePath             = "druid.server.https.keyStorePath"
+	DruidKeyStoreType             = "druid.server.https.keyStoreType"
+	DruidCertAlias                = "druid.server.https.certAlias"
+	DruidKeyStorePassword         = "druid.server.https.keyStorePassword"
+	DruidRequireClientCertificate = "druid.server.https.requireClientCertificate"
+	DruidTrustStoreType           = "druid.server.https.trustStoreType"
+
+	DruidTrustStorePassword      = "druid.client.https.trustStorePassword"
+	DruidTrustStorePath          = "druid.client.https.trustStorePath"
+	DruidClientTrustStoreType    = "druid.client.https.trustStoreType"
+	DruidClientValidateHostNames = "druid.client.https.validateHostnames"
+
+	DruidKeyStoreTypeJKS           = "jks"
+	DruidKeyStorePasswordEnvConfig = "{\"type\": \"environment\", \"variable\": \"DRUID_KEY_STORE_PASSWORD\"}"
+
+	DruidValueTrue  = "true"
+	DruidValueFalse = "false"
+
+	DruidCertDir            = "/opt/druid/ssl"
+	DruidCertMetadataSubDir = "metadata"
+
+	// MySQL TLS
+	DruidMetadataMySQLUseSSL                          = "druid.metadata.mysql.ssl.useSSL"
+	DruidMetadataMySQLClientCertKeyStoreURL           = "druid.metadata.mysql.ssl.clientCertificateKeyStoreUrl"
+	DruidMetadataMySQLClientCertKeyStoreType          = "druid.metadata.mysql.ssl.clientCertificateKeyStoreType"
+	DruidMetadataMySQLClientCertKeyStoreTypeJKS       = "JKS"
+	DruidMetadataMySQLClientCertKeyStorePassword      = "druid.metadata.mysql.ssl.clientCertificateKeyStorePassword"
+	DruidMetadataMySQLClientCertKeyStorePasswordValue = "password"
+
+	// Postgres TLS
+	DruidMetadataPostgresUseSSL         = "druid.metadata.postgres.ssl.useSSL"
+	DruidMetadataPGUseSSLMode           = "druid.metadata.postgres.ssl.sslMode"
+	DruidMetadataPGUseSSLModeVerifyFull = "verify-full"
+	DruidMetadataPGSSLCert              = "druid.metadata.postgres.ssl.sslCert"
+	DruidMetadataPGSSLKey               = "druid.metadata.postgres.ssl.sslKey"
+	DruidMetadataPGSSLRootCert          = "druid.metadata.postgres.ssl.sslRootCert"
 
 	// Deep Storage
 	DruidDeepStorageTypeKey      = "druid.storage.type"
@@ -1037,6 +1191,7 @@ const (
 	DruidExtensionBasicSecurity             = "druid-basic-security"
 	DruidExtensionMultiStageQuery           = "druid-multi-stage-query"
 	DruidExtensionPrometheusEmitter         = "prometheus-emitter"
+	DruidExtensionSSLContext                = "simple-client-sslcontext"
 	DruidService                            = "druid.service"
 
 	// Monitoring Configurations
@@ -1056,6 +1211,9 @@ const (
 	DruidMonitoringQueryCountStatsMonitor       = "org.apache.druid.server.metrics.QueryCountStatsMonitor"
 	DruidMonitoringTaskCountStatsMonitor        = "org.apache.druid.server.metrics.TaskCountStatsMonitor"
 	DruidMonitoringSysMonitor                   = "org.apache.druid.java.util.metrics.SysMonitor"
+
+	DruidDimensionMapDir                = "/opt/druid/conf/metrics.json"
+	DruidEmitterPrometheusStrategyValue = "exporter"
 
 	/// Coordinators Configurations
 	DruidCoordinatorStartDelay                = "druid.coordinator.startDelay"
@@ -1131,11 +1289,22 @@ const (
 )
 
 const (
-	RabbitMQAMQPPort          = 5672
-	RabbitMQPeerDiscoveryPort = 4369
-	RabbitMQManagementUIPort  = 15672
-	RabbitMQExporterPort      = 15692
-	RabbitMQInterNodePort     = 25672
+	RabbitMQAMQPPort                = 5672
+	RabbitMQAMQPSPort               = 5671
+	RabbitMQMQTTPort                = 1883
+	RabbitMQMQTTPortWithSSL         = 8883
+	RabbitMQSTOMPPort               = 61613
+	RabbitMQSTOMPPortWithSSL        = 61614
+	RabbitMQWebSTOMPPort            = 15674
+	RabbitMQWebSTOMPPortWithSSL     = 15673
+	RabbitMQWebMQTTPort             = 15675
+	RabbitMQWebMQTTPortWithSSL      = 15676
+	RabbitMQExporterPort            = 15692
+	RabbitMQExporterPortWithSSL     = 15691
+	RabbitMQManagementUIPort        = 15672
+	RabbitMQManagementUIPortWithSSL = 15671
+	RabbitMQInterNodePort           = 25672
+	RabbitMQPeerDiscoveryPort       = 4369
 
 	RabbitMQVolumeData         = "data"
 	RabbitMQVolumeConfig       = "rabbitmqconfig"
@@ -1162,14 +1331,22 @@ const (
 	RabbitMQShovelPlugin               = "rabbitmq_shovel"
 	RabbitMQShovelManagementPlugin     = "rabbitmq_shovel_management"
 	RabbitMQWebDispatchPlugin          = "rabbitmq_web_dispatch"
+	RabbitMQMQTTPlugin                 = "rabbitmq_mqtt"
+	RabbitMQWebMQTTPlugin              = "rabbitmq_stomp"
+	RabbitMQSTOMPPlugin                = "rabbitmq_web_mqtt"
+	RabbitMQWebSTOMPPlugin             = "rabbitmq_web_stomp"
+	RabbitMQPrometheusPlugin           = "rabbitmq_prometheus"
 	RabbitMQLoopBackUserKey            = "loopback_users"
 	RabbitMQLoopBackUserVal            = "none"
 	RabbitMQDefaultTCPListenerKey      = "listeners.tcp.default"
 	RabbitMQDefaultSSLListenerKey      = "listeners.ssl.default"
+	RabbitMQDefaultSSLListener1Key     = "listeners.ssl.1"
 	RabbitMQDefaultTCPListenerVal      = "5672"
 	RabbitMQDefaultTLSListenerVal      = "5671"
 	RabbitMQQueueMasterLocatorKey      = "queue_master_locator"
 	RabbitMQQueueMasterLocatorVal      = "min-masters"
+	RabbitMQQueueLeaderLocatorKey      = "queue_leader_locator"
+	RabbitMQQueueLeaderLocatorVal      = "balanced"
 	RabbitMQDiskFreeLimitKey           = "disk_free_limit.absolute"
 	RabbitMQDiskFreeLimitVal           = "2GB"
 	RabbitMQPartitionHandingKey        = "cluster_partition_handling"
@@ -1189,9 +1366,13 @@ const (
 	RabbitMQLogConsoleLevelKey         = "log.console.level"
 	RabbitMQLogConsoleLevelVal         = "info"
 	RabbitMQDefaultUserKey             = "default_user"
+	RabbitMQAnonymousUserKey           = "anonymous_login_user"
 	RabbitMQDefaultUserVal             = "$(RABBITMQ_DEFAULT_USER)"
+	RabbitMQAnonymousUserVal           = "guest"
 	RabbitMQDefaultPasswordKey         = "default_pass"
+	RabbitMQAnonymousPasswordKey       = "anonymous_login_pass"
 	RabbitMQDefaultPasswordVal         = "$(RABBITMQ_DEFAULT_PASS)"
+	RabbitMQAnonymousPasswordVal       = "guest"
 	RabbitMQClusterNameKey             = "cluster_name"
 	RabbitMQK8sSvcNameKey              = "cluster_formation.k8s.service_name"
 	RabbitMQSSLOptionsCAKey            = "ssl_options.cacertfile"
@@ -1199,23 +1380,31 @@ const (
 	RabbitMQSSLOptionsPrivateKey       = "ssl_options.keyfile"
 	RabbitMQSSLOptionsVerifyKey        = "ssl_options.verify"
 	RabbitMQSSLOptionsFailIfNoPeerKey  = "ssl_options.fail_if_no_peer_cert"
-	RabbitMQConfigFileName             = "rabbitmq.conf"
-	RabbitMQEnabledPluginsFileName     = "enabled_plugins"
-	RabbitMQHealthCheckerQueueName     = "kubedb-system"
+	RabbitMQSSLPortKey                 = "ssl.port"
+
+	RabbitMQSSLCAKey               = "ssl.cacertfile"
+	RabbitMQSSLCertKey             = "ssl.certfile"
+	RabbitMQSSLPrivateKey          = "ssl.keyfile"
+	RabbitMQSSLVerifyKey           = "ssl.verify"
+	RabbitMQSSLFailIfNoPeerKey     = "ssl.fail_if_no_peer_cert"
+	RabbitMQConfigFileName         = "rabbitmq.conf"
+	RabbitMQEnabledPluginsFileName = "enabled_plugins"
+	RabbitMQHealthCheckerQueueName = "kubedb-system"
 )
 
 // =========================== FerretDB Constants ============================
 const (
 
 	// envs
-	EnvFerretDBUser     = "FERRETDB_PG_USER"
-	EnvFerretDBPassword = "FERRETDB_PG_PASSWORD"
-	EnvFerretDBHandler  = "FERRETDB_HANDLER"
-	EnvFerretDBPgURL    = "FERRETDB_POSTGRESQL_URL"
-	EnvFerretDBTLSPort  = "FERRETDB_LISTEN_TLS"
-	EnvFerretDBCAPath   = "FERRETDB_LISTEN_TLS_CA_FILE"
-	EnvFerretDBCertPath = "FERRETDB_LISTEN_TLS_CERT_FILE"
-	EnvFerretDBKeyPath  = "FERRETDB_LISTEN_TLS_KEY_FILE"
+	EnvFerretDBUser      = "FERRETDB_PG_USER"
+	EnvFerretDBPassword  = "FERRETDB_PG_PASSWORD"
+	EnvFerretDBHandler   = "FERRETDB_HANDLER"
+	EnvFerretDBPgURL     = "FERRETDB_POSTGRESQL_URL"
+	EnvFerretDBTLSPort   = "FERRETDB_LISTEN_TLS"
+	EnvFerretDBCAPath    = "FERRETDB_LISTEN_TLS_CA_FILE"
+	EnvFerretDBCertPath  = "FERRETDB_LISTEN_TLS_CERT_FILE"
+	EnvFerretDBKeyPath   = "FERRETDB_LISTEN_TLS_KEY_FILE"
+	EnvFerretDBDebugAddr = "FERRETDB_DEBUG_ADDR"
 
 	FerretDBContainerName = "ferretdb"
 	FerretDBMainImage     = "ghcr.io/ferretdb/ferretdb"
@@ -1223,11 +1412,14 @@ const (
 
 	FerretDBServerPath = "/etc/certs/server"
 
+	FerretDBExternalClientPath = "/etc/certs/ext"
+
 	FerretDBDefaultPort = 27017
-	FerretDBMetricsPort = 8080
+	FerretDBMetricsPort = 56790
 	FerretDBTLSPort     = 27018
 
-	FerretDBMetricsPath = "/debug/metrics"
+	FerretDBMetricsPath     = "/debug/metrics"
+	FerretDBMetricsPortName = "metrics"
 )
 
 // =========================== ClickHouse Constants ============================
@@ -1239,36 +1431,144 @@ const (
 	ClickHouseNativeTCP   = 9000
 	ClickHouseNativeTLS   = 9440
 	ClickhousePromethues  = 9363
+	ClickHouseRaftPort    = 9234
 
-	ClickHouseVolumeData         = "data"
-	ClickHouseDataDir            = "/var/lib/clickhouse"
-	ClickHouseConfigVolName      = "clickhouse-config"
-	ClickHouseConfigDir          = "/etc/clickhouse-server/config.d"
+	ComponentCoOrdinator = "co-ordinator"
+
+	ClickHousePromethusEndpoint           = "/metrics"
+	ClickHouseDataDir                     = "/var/lib/clickhouse"
+	ClickHouseKeeperDataDir               = "/var/lib/clickhouse_keeper"
+	ClickHouseConfigDir                   = "/etc/clickhouse-server/config.d"
+	ClickHouseKeeperConfigDir             = "/etc/clickhouse-keeper"
+	ClickHouseCommonConfigDir             = "/etc/clickhouse-server/conf.d"
+	ClickHouseTempConfigDir               = "/ch-tmp"
+	ClickHouseInternalKeeperTempConfigDir = "/keeper"
+	ClickHouseTempDir                     = "/ch-tmp"
+	ClickHouseKeeperTempDir               = "/ch-tmp"
+	ClickHouseKeeperConfigPath            = "/etc/clickhouse-keeper"
+	ClickHouseUserConfigDir               = "/etc/clickhouse-server/user.d"
+	ClickHouseLogPath                     = "/var/log/clickhouse-server/clickhouse-server.log"
+	ClickHouseErrorLogPath                = "/var/log/clickhouse-server/clickhouse-server.err.log"
+
+	// keeper
+	ClickHouseKeeperDataPath     = "/var/lib/clickhouse_keeper"
+	ClickHouseKeeperLogPath      = "/var/lib/clickhouse_keeper/coordination/logs"
+	ClickHouseKeeperSnapshotPath = "/var/lib/clickhouse_keeper/coordination/snapshots"
+
+	ClickHouseInternalKeeperDataPath     = "/var/lib/clickhouse/coordination/log"
+	ClickHouseInternalKeeperSnapshotPath = "/var/lib/clickhouse/coordination/snapshots"
+	ClickHOuseKeeeprConfigFileVolumeDir  = "/tmp/clickhouse-keeper"
+
+	ClickHouseVolumeData  = "data"
+	ClickHouseDefaultUser = "default"
+
+	ClickHouseConfigVolumeName               = "clickhouse-config"
+	ClickHouseKeeperConfigVolumeName         = "clickhouse-keeper-config"
+	ClickHouseInternalKeeperConfigVolumeName = "clickhouse-internal-keeper-config"
+
 	ClickHouseDefaultStorageSize = "2Gi"
 
 	ClickHouseClusterConfigVolName = "cluster-config"
-	ClickHouseClusterConfigDir     = "/etc/clickhouse-server/conf.d"
 
-	ClickHouseTempClusterConfigVolName = "temp-cluster-config"
+	ClickHouseClusterTempConfigVolName = "temp-cluster-config"
 
 	ClickHouseContainerName     = "clickhouse"
 	ClickHouseInitContainerName = "clickhouse-init"
 
 	ClickHouseClusterConfigFile = "cluster-config.yaml"
-	ClickHouseTempConfigDir     = "/ch-tmp/config"
-	ClickHouseTempDir           = "/ch-tmp"
 
-	ClickHouseUserConfigDir  = "/etc/clickhouse-server/user.d"
 	ClickHouseMacrosFileName = "macros.yaml"
 
 	ClickHouseStandalone = "standalone"
 	ClickHouseCluster    = "cluster"
 
-	ClickHouseHealthCheckerDatabase = "kubedb_system_db"
-	ClickHouseHealthCheckerTable    = "kubedb_system_table"
+	ClickHouseHealthCheckerDatabase = "kubedb_system"
+	ClickHouseHealthCheckerTable    = "kubedb_write_check"
 
-	ClickHouseServerConfigFile = "server-config.yaml"
-	ClickHouseKeeperFileConfig = "keeper-config.yaml"
+	ClickHouseServerConfigFile   = "server-config.yaml"
+	ClickHouseKeeperFileConfig   = "keeper_config.yaml"
+	ClickHouseVolumeCustomConfig = "custom-config"
+
+	// keeper
+	ClickHouseKeeperContainerName        = "clickhouse-keeper"
+	ClickHouseKeeeprConfigFileName       = "keeper_config.xml"
+	ClickHOuseKeeeprConfigFileVolumeName = "keeper-config"
+	ClickHouseKeeperInitContainerName    = "clickhouse-keeper-init"
+	ClickHouseKeeperConfig               = "etc-clickhouse-keeper"
+	ClickHouseInternalServerListFile     = "server_list.yaml"
+	ClickHouseKeeperServerIdNo           = "serverid"
+	ClickHouseKeeperServerID             = "KEEPERID"
+)
+
+// =========================== Cassandra Constants ============================
+
+const (
+	CassandraNativeTcpPort    = 9042
+	CassandraInterNodePort    = 7000
+	CassandraInterNodeSslPort = 7001
+	CassandraJmxPort          = 7199
+	CassandraExporterPort     = 8080
+
+	CassandraNativeTcpPortName    = "cql"
+	CassandraInterNodePortName    = "internode"
+	CassandraInterNodeSslPortName = "internode-ssl"
+	CassandraJmxPortName          = "jmx"
+	CassandraExporterPortName     = "exporter"
+
+	CassandraUserAdmin = "admin"
+
+	CassandraAuthCommand       = "/tmp/sc/cassandra-auth.sh"
+	CassandraMetadataName      = "metadata.name"
+	CassandraMetadataNamespace = "metadata.namespace"
+	CassandraStatusPodIP       = "status.podIP"
+
+	CassandraPasswordAuthenticator = "PasswordAuthenticator"
+	CassandraAllowAllAuthenticator = "AllowAllAuthenticator"
+
+	CassandraTopology = "CASSANDRA_TOPOLOGY"
+
+	CassandraOperatorConfigDir = "/tmp/config/operator-config"
+	CassandraMainConfigDir     = "/etc/cassandra"
+	CassandraCustomConfigDir   = "/tmp/config/custom-config"
+	CassandraScriptDir         = "/tmp/sc"
+
+	CassandraVolumeOperatorConfig = "operator-config-volume"
+	CassandraVolumeMainConfig     = "main-config-volume"
+	CassandraVolumeCustomConfig   = "custom-config"
+	CassandraVolumeScript         = "script-volume"
+
+	CassandraVolumeData        = "data"
+	CassandraDataDir           = "/var/lib/cassandra"
+	CassandraServerLogDir      = "var/log/cassandra-server/cassandra-server.log"
+	CassandraServerErrorLogDir = "var/log/cassandra-server/cassandra-server.err.log"
+	CassandraContainerName     = "cassandra"
+	CassandraInitContainerName = "cassandra-init"
+	CassandraMainConfigFile    = "cassandra.yaml"
+	CassandraRackConfigFile    = "rack-config.yaml"
+	CassandraStandalone        = "standalone"
+	CassandraServerConfigFile  = "server-config.yaml"
+
+	EnvNameCassandraEndpointSnitch = "CASSANDRA_ENDPOINT_SNITCH"
+	EnvValCassandraEndpointSnitch  = "GossipingPropertyFileSnitch"
+
+	EnvNameCassandraRack             = "CASSANDRA_RACK"
+	EnvNameCassandraPodNamespace     = "CASSANDRA_POD_NAMESPACE"
+	EnvNameCassandraService          = "CASSANDRA_SERVICE"
+	EnvNameCassandraMaxHeapSize      = "MAX_HEAP_SIZE"
+	EnvValCassandraMaxHeapSize       = "512M"
+	EnvNameCassandraHeapNewSize      = "HEAP_NEWSIZE"
+	EnvValCassandraHeapNewSize       = "100M"
+	EnvNameCassandraListenAddress    = "CASSANDRA_LISTEN_ADDRESS"
+	EnvNameCassandraBroadcastAddress = "CASSANDRA_BROADCAST_ADDRESS"
+	EnvNameCassandraRpcAddress       = "CASSANDRA_RPC_ADDRESS"
+	EnvValCassandraRpcAddress        = "0.0.0.0"
+	EnvNameCassandraNumTokens        = "CASSANDRA_NUM_TOKENS"
+	EnvValCassandraNumTokens         = "256"
+	EnvNameCassandraStartRpc         = "CASSANDRA_START_RPC"
+	EnvNameCassandraSeeds            = "CASSANDRA_SEEDS"
+	EnvNameCassandraPodName          = "CASSANDRA_POD_NAME"
+	EnvNameCassandraUser             = "CASSANDRA_USER"
+	EnvNameCassandraPassword         = "CASSANDRA_PASSWORD"
 )
 
 // Resource kind related constants
@@ -1276,6 +1576,19 @@ const (
 	ResourceKindStatefulSet = "StatefulSet"
 	ResourceKindPetSet      = "PetSet"
 )
+
+var (
+	SidekickGVR       = fmt.Sprintf("%s.%s", skapi.ResourceSidekicks, skapi.SchemeGroupVersion.Group)
+	SidekickOwnerName = SidekickGVR + "/owner-name"
+	SidekickOwnerKind = SidekickGVR + "/owner-kind"
+)
+
+func CommonSidekickLabels() map[string]string {
+	return map[string]string{
+		meta_util.NameLabelKey:      SidekickGVR,
+		meta_util.ManagedByLabelKey: GroupName,
+	}
+}
 
 var (
 	DefaultInitContainerResource = core.ResourceRequirements{
@@ -1294,6 +1607,16 @@ var (
 		},
 		Limits: core.ResourceList{
 			core.ResourceMemory: resource.MustParse("1024Mi"),
+		},
+	}
+	// ref: https://clickhouse.com/docs/en/guides/sizing-and-hardware-recommendations#what-should-cpu-utilization-be
+	ClickHouseDefaultResources = core.ResourceRequirements{
+		Requests: core.ResourceList{
+			core.ResourceCPU:    resource.MustParse("1"),
+			core.ResourceMemory: resource.MustParse("4Gi"),
+		},
+		Limits: core.ResourceList{
+			core.ResourceMemory: resource.MustParse("4Gi"),
 		},
 	}
 	// CoordinatorDefaultResources must be used for raft backed coordinators to avoid unintended leader switches
@@ -1317,15 +1640,35 @@ var (
 			core.ResourceMemory: resource.MustParse("256Mi"),
 		},
 	}
+	DefaultArbiterMemoryIntensive = core.ResourceRequirements{
+		Requests: core.ResourceList{
+			// these are the default cpu & memory for a coordinator container
+			core.ResourceCPU:    resource.MustParse(".200"),
+			core.ResourceMemory: resource.MustParse("500Mi"),
+		},
+		Limits: core.ResourceList{
+			core.ResourceMemory: resource.MustParse("500Mi"),
+		},
+	}
 
-	// DefaultResourcesCPUIntensive is for MongoDB versions >= 6
-	DefaultResourcesCPUIntensive = core.ResourceRequirements{
+	// DefaultResourcesCPUIntensiveMongoDBv6 is for MongoDB versions >= 6
+	DefaultResourcesCPUIntensiveMongoDBv6 = core.ResourceRequirements{
 		Requests: core.ResourceList{
 			core.ResourceCPU:    resource.MustParse(".800"),
 			core.ResourceMemory: resource.MustParse("1024Mi"),
 		},
 		Limits: core.ResourceList{
 			core.ResourceMemory: resource.MustParse("1024Mi"),
+		},
+	}
+	// DefaultResourcesCPUIntensiveMongoDBv8 is for MongoDB versions >= 8
+	DefaultResourcesCPUIntensiveMongoDBv8 = core.ResourceRequirements{
+		Requests: core.ResourceList{
+			core.ResourceCPU:    resource.MustParse(".800"),
+			core.ResourceMemory: resource.MustParse("1.5Gi"),
+		},
+		Limits: core.ResourceList{
+			core.ResourceMemory: resource.MustParse("1.5Gi"),
 		},
 	}
 
@@ -1338,6 +1681,17 @@ var (
 		},
 		Limits: core.ResourceList{
 			core.ResourceMemory: resource.MustParse("1.5Gi"),
+		},
+	}
+
+	// DefaultResourcesMemoryIntensiveMSSQLServer must be used for Microsoft SQL Server
+	DefaultResourcesMemoryIntensiveMSSQLServer = core.ResourceRequirements{
+		Requests: core.ResourceList{
+			core.ResourceCPU:    resource.MustParse(".500"),
+			core.ResourceMemory: resource.MustParse("1.5Gi"),
+		},
+		Limits: core.ResourceList{
+			core.ResourceMemory: resource.MustParse("4Gi"),
 		},
 	}
 
@@ -1355,7 +1709,7 @@ var (
 	// DefaultResourcesMemoryIntensiveSDB must be used for Singlestore when enabled monitoring or version >= 8.5.x
 	DefaultResourcesMemoryIntensiveSDB = core.ResourceRequirements{
 		Requests: core.ResourceList{
-			core.ResourceCPU:    resource.MustParse(".500"),
+			core.ResourceCPU:    resource.MustParse(".600"),
 			core.ResourceMemory: resource.MustParse("2Gi"),
 		},
 		Limits: core.ResourceList{
