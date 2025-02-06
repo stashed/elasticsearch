@@ -43,6 +43,7 @@ import (
 	appcatalog_cs "kmodules.xyz/custom-resources/client/clientset/versioned"
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
 	esapi "kubedb.dev/apimachinery/apis/elasticsearch/v1alpha1"
+	dbapi "kubedb.dev/apimachinery/apis/kubedb/v1"
 	kubedbapi "kubedb.dev/apimachinery/apis/kubedb/v1alpha2"
 	es_dashboard "kubedb.dev/db-client-go/elasticsearchdashboard"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -218,8 +219,8 @@ func getElasticSearchDashboard(klient client.Client, appBinding *appcatalog.AppB
 	return nil, fmt.Errorf("no elasticsearch dashboard found")
 }
 
-func getElasticSearch(klient client.Client, appBinding *appcatalog.AppBinding) (*kubedbapi.Elasticsearch, error) {
-	es := &kubedbapi.Elasticsearch{
+func getElasticSearch(klient client.Client, appBinding *appcatalog.AppBinding) (*dbapi.Elasticsearch, error) {
+	es := &dbapi.Elasticsearch{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      appBinding.Name,
 			Namespace: appBinding.Namespace,
@@ -248,7 +249,7 @@ func getSecret(klient client.Client, obj kmapi.ObjectReference) (*core.Secret, e
 	return sec, nil
 }
 
-func getVersionInfo(es *kubedbapi.Elasticsearch, appBinding *appcatalog.AppBinding) *es_dashboard.DbVersionInfo {
+func getVersionInfo(es *dbapi.Elasticsearch, appBinding *appcatalog.AppBinding) *es_dashboard.DbVersionInfo {
 	authPlugin := catalog.ElasticsearchAuthPluginOpenSearch
 	segments := strings.Split(es.Spec.Version, "-")
 	if segments[0] == "xpack" {

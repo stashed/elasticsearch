@@ -23,13 +23,14 @@ import (
 	"strings"
 
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
+	"kubedb.dev/apimachinery/apis/kubedb"
 
+	"github.com/coreos/go-semver/semver"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"k8s.io/klog/v2"
 	ofst "kmodules.xyz/offshoot-api/api/v2"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -48,14 +49,7 @@ func (s *Solr) Default() {
 	}
 	solrlog.Info("default", "name", s.Name)
 
-	slVersion := catalog.SolrVersion{}
-	err := DefaultClient.Get(context.TODO(), types.NamespacedName{Name: s.Spec.Version}, &slVersion)
-	if err != nil {
-		klog.Errorf("Version does not exist.")
-		return
-	}
-
-	s.SetDefaults(&slVersion)
+	s.SetDefaults()
 }
 
 var _ webhook.Validator = &Solr{}
@@ -90,7 +84,7 @@ func (s *Solr) ValidateDelete() (admission.Warnings, error) {
 	solrlog.Info("validate delete", "name", s.Name)
 
 	var allErr field.ErrorList
-	if s.Spec.DeletionPolicy == TerminationPolicyDoNotTerminate {
+	if s.Spec.DeletionPolicy == DeletionPolicyDoNotTerminate {
 		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("terminationPolicy"),
 			s.Name,
 			"Can not delete as terminationPolicy is set to \"DoNotTerminate\""))
@@ -100,18 +94,18 @@ func (s *Solr) ValidateDelete() (admission.Warnings, error) {
 }
 
 var solrReservedVolumes = []string{
-	SolrVolumeConfig,
-	SolrVolumeDefaultConfig,
-	SolrVolumeCustomConfig,
-	SolrVolumeAuthConfig,
+	kubedb.SolrVolumeConfig,
+	kubedb.SolrVolumeDefaultConfig,
+	kubedb.SolrVolumeCustomConfig,
+	kubedb.SolrVolumeAuthConfig,
 }
 
 var solrReservedVolumeMountPaths = []string{
-	SolrHomeDir,
-	SolrDataDir,
-	SolrCustomConfigDir,
-	SolrSecurityConfigDir,
-	SolrTempConfigDir,
+	kubedb.SolrHomeDir,
+	kubedb.SolrDataDir,
+	kubedb.SolrCustomConfigDir,
+	kubedb.SolrSecurityConfigDir,
+	kubedb.SolrTempConfigDir,
 }
 
 var solrAvailableModules = []string{
@@ -148,6 +142,13 @@ func (s *Solr) ValidateCreateOrUpdate() field.ErrorList {
 				s.Name,
 				err.Error()))
 		}
+	}
+
+	version := semver.New(s.Spec.Version)
+	if version.Major == 8 && s.Spec.Topology != nil {
+		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("enableSSL"),
+			s.Name,
+			".spec.topology not supported for version 8"))
 	}
 
 	err := solrValidateModules(s)
