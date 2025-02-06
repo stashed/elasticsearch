@@ -35,7 +35,7 @@ const (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=mssqlserverversions,singular=mssqlserverversion,scope=Cluster,shortName=msversion,categories={datastore,kubedb,appscode}
+// +kubebuilder:resource:path=mssqlserverversions,singular=mssqlserverversion,scope=Cluster,shortName=msversion,categories={catalog,kubedb,appscode}
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version"
 // +kubebuilder:printcolumn:name="DB_IMAGE",type="string",JSONPath=".spec.db.image"
 // +kubebuilder:printcolumn:name="Deprecated",type="boolean",JSONPath=".spec.deprecated"
@@ -55,6 +55,8 @@ type MSSQLServerVersionSpec struct {
 	// Coordinator Image
 	// +optional
 	Coordinator MSSQLServerCoordinator `json:"coordinator,omitempty"`
+	// Exporter Image
+	Exporter MSSQLServerVersionExporter `json:"exporter"`
 	// Init container Image
 	InitContainer MSSQLServerInitContainer `json:"initContainer"`
 	// Deprecated versions usable but regarded as obsolete and best avoided, typically due to having been superseded.
@@ -68,6 +70,10 @@ type MSSQLServerVersionSpec struct {
 	SecurityContext SecurityContext `json:"securityContext"`
 	// update constraints
 	UpdateConstraints UpdateConstraints `json:"updateConstraints,omitempty"`
+	// Archiver defines the walg & kube-stash-addon related specifications
+	Archiver ArchiverSpec `json:"archiver,omitempty"`
+	// +optional
+	UI []ChartInfo `json:"ui,omitempty"`
 }
 
 // MSSQLServerDatabase is the MSSQLServer Database image
@@ -77,6 +83,11 @@ type MSSQLServerDatabase struct {
 
 // MSSQLServerCoordinator is the MSSQLServer coordinator Container image
 type MSSQLServerCoordinator struct {
+	Image string `json:"image"`
+}
+
+// MSSQLServerVersionExporter is the image for the MSSQL Server exporter
+type MSSQLServerVersionExporter struct {
 	Image string `json:"image"`
 }
 
