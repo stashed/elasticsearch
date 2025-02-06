@@ -8,6 +8,11 @@ metadata:
 spec:
   group: kubedb.com
   names:
+    categories:
+    - datastore
+    - kubedb
+    - appscode
+    - all
     kind: ZooKeeper
     listKind: ZooKeeperList
     plural: zookeepers
@@ -47,13 +52,22 @@ spec:
                 type: integer
               authSecret:
                 properties:
+                  activeFrom:
+                    format: date-time
+                    type: string
                   externallyManaged:
                     type: boolean
                   name:
                     default: ""
                     type: string
+                  rotateAfter:
+                    type: string
                 type: object
                 x-kubernetes-map-type: atomic
+              clientSecurePort:
+                default: 2182
+                format: int32
+                type: integer
               configSecret:
                 properties:
                   name:
@@ -69,6 +83,8 @@ spec:
                 - DoNotTerminate
                 type: string
               disableAuth:
+                type: boolean
+              enableSSL:
                 type: boolean
               halted:
                 type: boolean
@@ -93,6 +109,20 @@ spec:
                     format: int32
                     type: integer
                 type: object
+              keystoreCredSecret:
+                properties:
+                  activeFrom:
+                    format: date-time
+                    type: string
+                  externallyManaged:
+                    type: boolean
+                  name:
+                    default: ""
+                    type: string
+                  rotateAfter:
+                    type: string
+                type: object
+                x-kubernetes-map-type: atomic
               monitor:
                 properties:
                   agent:
@@ -3369,6 +3399,8 @@ spec:
                       - primary
                       - standby
                       - stats
+                      - dashboard
+                      - secondary
                       type: string
                     metadata:
                       properties:
@@ -3519,6 +3551,107 @@ spec:
                   volumeName:
                     type: string
                 type: object
+              tls:
+                properties:
+                  certificates:
+                    items:
+                      properties:
+                        alias:
+                          type: string
+                        dnsNames:
+                          items:
+                            type: string
+                          type: array
+                        duration:
+                          type: string
+                        emailAddresses:
+                          items:
+                            type: string
+                          type: array
+                        ipAddresses:
+                          items:
+                            type: string
+                          type: array
+                        issuerRef:
+                          properties:
+                            apiGroup:
+                              type: string
+                            kind:
+                              type: string
+                            name:
+                              type: string
+                          required:
+                          - kind
+                          - name
+                          type: object
+                          x-kubernetes-map-type: atomic
+                        privateKey:
+                          properties:
+                            encoding:
+                              enum:
+                              - PKCS1
+                              - PKCS8
+                              type: string
+                          type: object
+                        renewBefore:
+                          type: string
+                        secretName:
+                          type: string
+                        subject:
+                          properties:
+                            countries:
+                              items:
+                                type: string
+                              type: array
+                            localities:
+                              items:
+                                type: string
+                              type: array
+                            organizationalUnits:
+                              items:
+                                type: string
+                              type: array
+                            organizations:
+                              items:
+                                type: string
+                              type: array
+                            postalCodes:
+                              items:
+                                type: string
+                              type: array
+                            provinces:
+                              items:
+                                type: string
+                              type: array
+                            serialNumber:
+                              type: string
+                            streetAddresses:
+                              items:
+                                type: string
+                              type: array
+                          type: object
+                        uris:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - alias
+                      type: object
+                    type: array
+                  issuerRef:
+                    properties:
+                      apiGroup:
+                        type: string
+                      kind:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - kind
+                    - name
+                    type: object
+                    x-kubernetes-map-type: atomic
+                type: object
               version:
                 type: string
             required:
@@ -3551,87 +3684,6 @@ spec:
                   - type
                   type: object
                 type: array
-              gateway:
-                properties:
-                  hostname:
-                    type: string
-                  ip:
-                    type: string
-                  name:
-                    type: string
-                  namespace:
-                    type: string
-                  services:
-                    items:
-                      properties:
-                        alias:
-                          enum:
-                          - primary
-                          - standby
-                          - stats
-                          type: string
-                        ports:
-                          items:
-                            properties:
-                              backendServicePort:
-                                format: int32
-                                type: integer
-                              name:
-                                type: string
-                              nodePort:
-                                format: int32
-                                type: integer
-                              port:
-                                format: int32
-                                type: integer
-                            required:
-                            - port
-                            type: object
-                          type: array
-                      required:
-                      - alias
-                      - ports
-                      type: object
-                    type: array
-                  ui:
-                    items:
-                      properties:
-                        alias:
-                          type: string
-                        helmRelease:
-                          properties:
-                            name:
-                              default: ""
-                              type: string
-                          type: object
-                          x-kubernetes-map-type: atomic
-                        port:
-                          properties:
-                            backendServicePort:
-                              format: int32
-                              type: integer
-                            name:
-                              type: string
-                            nodePort:
-                              format: int32
-                              type: integer
-                            port:
-                              format: int32
-                              type: integer
-                          required:
-                          - port
-                          type: object
-                        url:
-                          type: string
-                      required:
-                      - alias
-                      - url
-                      type: object
-                    type: array
-                required:
-                - name
-                - namespace
-                type: object
               observedGeneration:
                 format: int64
                 type: integer

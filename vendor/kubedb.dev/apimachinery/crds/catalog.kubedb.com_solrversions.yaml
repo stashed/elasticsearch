@@ -9,7 +9,7 @@ spec:
   group: catalog.kubedb.com
   names:
     categories:
-    - datastore
+    - catalog
     - kubedb
     - appscode
     kind: SolrVersion
@@ -66,6 +66,17 @@ spec:
                   runAsUser:
                     format: int64
                     type: integer
+                type: object
+              updateConstraints:
+                properties:
+                  allowlist:
+                    items:
+                      type: string
+                    type: array
+                  denylist:
+                    items:
+                      type: string
+                    type: array
                 type: object
               version:
                 type: string
