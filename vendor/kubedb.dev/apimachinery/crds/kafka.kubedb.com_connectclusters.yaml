@@ -8,6 +8,10 @@ metadata:
 spec:
   group: kafka.kubedb.com
   names:
+    categories:
+    - kfstore
+    - kubedb
+    - appscode
     kind: ConnectCluster
     listKind: ConnectClusterList
     plural: connectclusters
@@ -43,10 +47,15 @@ spec:
             properties:
               authSecret:
                 properties:
+                  activeFrom:
+                    format: date-time
+                    type: string
                   externallyManaged:
                     type: boolean
                   name:
                     default: ""
+                    type: string
+                  rotateAfter:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
@@ -104,10 +113,15 @@ spec:
                 type: object
               keystoreCredSecret:
                 properties:
+                  activeFrom:
+                    format: date-time
+                    type: string
                   externallyManaged:
                     type: boolean
                   name:
                     default: ""
+                    type: string
+                  rotateAfter:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic

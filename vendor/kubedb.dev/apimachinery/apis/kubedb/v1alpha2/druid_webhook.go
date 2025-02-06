@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	catalog "kubedb.dev/apimachinery/apis/catalog/v1alpha1"
+	"kubedb.dev/apimachinery/apis/kubedb"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -84,17 +85,17 @@ func (d *Druid) ValidateDelete() (admission.Warnings, error) {
 }
 
 var druidReservedVolumes = []string{
-	DruidVolumeOperatorConfig,
-	DruidVolumeMainConfig,
-	DruidVolumeCustomConfig,
-	DruidVolumeMySQLMetadataStorage,
+	kubedb.DruidVolumeOperatorConfig,
+	kubedb.DruidVolumeMainConfig,
+	kubedb.DruidVolumeCustomConfig,
+	kubedb.DruidVolumeMySQLMetadataStorage,
 }
 
 var druidReservedVolumeMountPaths = []string{
-	DruidCConfigDirMySQLMetadata,
-	DruidOperatorConfigDir,
-	DruidMainConfigDir,
-	DruidCustomConfigDir,
+	kubedb.DruidCConfigDirMySQLMetadata,
+	kubedb.DruidOperatorConfigDir,
+	kubedb.DruidMainConfigDir,
+	kubedb.DruidCustomConfigDir,
 }
 
 func (d *Druid) validateCreateOrUpdate() field.ErrorList {
@@ -125,16 +126,26 @@ func (d *Druid) validateCreateOrUpdate() field.ErrorList {
 		}
 	}
 
-	if d.Spec.MetadataStorage == nil {
-		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("metadataStorage"),
+	if d.Spec.MetadataStorage.Name == "" {
+		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("metadataStorage").Child("name"),
 			d.Name,
-			"spec.metadataStorage is missing"))
-	} else {
-		if d.Spec.MetadataStorage.Name == "" && d.Spec.MetadataStorage.Type == "" {
-			allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("metadataStorage").Child("name"),
-				d.Name,
-				"spec.metadataStorage.type and spec.metadataStorage.name both can not be empty simultaneously"))
-		}
+			"spec.metadataStorage.name can not be empty"))
+	}
+	if d.Spec.MetadataStorage.Namespace == "" {
+		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("metadataStorage").Child("namespace"),
+			d.Name,
+			"spec.metadataStorage.namespace can not be empty"))
+	}
+
+	if d.Spec.ZookeeperRef.Name == "" {
+		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("zookeeperRef").Child("name"),
+			d.Name,
+			"spec.zookeeperRef.name can not be empty"))
+	}
+	if d.Spec.ZookeeperRef.Namespace == "" {
+		allErr = append(allErr, field.Invalid(field.NewPath("spec").Child("zookeeperRef").Child("namespace"),
+			d.Name,
+			"spec.zookeeperRef.namespace can not be empty"))
 	}
 
 	if d.Spec.Topology == nil {
@@ -267,9 +278,9 @@ func druidValidateVolumes(podTemplate *ofst.PodTemplateSpec, nodeType DruidNodeR
 	}
 
 	if nodeType == DruidNodeRoleHistoricals {
-		druidReservedVolumes = append(druidReservedVolumes, DruidVolumeHistoricalsSegmentCache)
+		druidReservedVolumes = append(druidReservedVolumes, kubedb.DruidVolumeHistoricalsSegmentCache)
 	} else if nodeType == DruidNodeRoleMiddleManagers {
-		druidReservedVolumes = append(druidReservedVolumes, DruidVolumeMiddleManagersBaseTaskDir)
+		druidReservedVolumes = append(druidReservedVolumes, kubedb.DruidVolumeMiddleManagersBaseTaskDir)
 	}
 
 	for _, rv := range druidReservedVolumes {
@@ -292,10 +303,10 @@ func druidValidateVolumesMountPaths(podTemplate *ofst.PodTemplateSpec, nodeType 
 	}
 
 	if nodeType == DruidNodeRoleHistoricals {
-		druidReservedVolumeMountPaths = append(druidReservedVolumeMountPaths, DruidHistoricalsSegmentCacheDir)
+		druidReservedVolumeMountPaths = append(druidReservedVolumeMountPaths, kubedb.DruidHistoricalsSegmentCacheDir)
 	}
 	if nodeType == DruidNodeRoleMiddleManagers {
-		druidReservedVolumeMountPaths = append(druidReservedVolumeMountPaths, DruidWorkerTaskBaseTaskDir)
+		druidReservedVolumeMountPaths = append(druidReservedVolumeMountPaths, kubedb.DruidWorkerTaskBaseTaskDir)
 	}
 
 	for _, rvmp := range druidReservedVolumeMountPaths {
