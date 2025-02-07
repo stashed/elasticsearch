@@ -6,7 +6,7 @@ toolchain go1.23.0
 
 require (
 	github.com/spf13/cobra v1.8.1
-	go.bytebuilders.dev/license-verifier/kubernetes v0.14.4
+	go.bytebuilders.dev/license-verifier/kubernetes v0.14.6
 	golang.org/x/text v0.21.0
 	gomodules.xyz/flags v0.1.3
 	gomodules.xyz/go-sh v0.1.0
@@ -22,7 +22,7 @@ require (
 	kubedb.dev/apimachinery v0.51.0
 	kubedb.dev/db-client-go v0.6.0
 	sigs.k8s.io/controller-runtime v0.18.4
-	stash.appscode.dev/apimachinery v0.38.1-0.20250114050236-cca8469a4c04
+	stash.appscode.dev/apimachinery v0.39.0
 )
 
 require (
@@ -85,8 +85,8 @@ require (
 	github.com/yudai/gojsondiff v1.0.0 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.bytebuilders.dev/license-proxyserver v0.0.19 // indirect
-	go.bytebuilders.dev/license-verifier v0.14.4 // indirect
+	go.bytebuilders.dev/license-proxyserver v0.0.20 // indirect
+	go.bytebuilders.dev/license-verifier v0.14.6 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
