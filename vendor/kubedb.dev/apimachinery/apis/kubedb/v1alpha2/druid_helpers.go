@@ -429,7 +429,7 @@ func (d *Druid) GetCertSecretName(alias DruidCertificateAlias) string {
 	return d.CertificateName(alias)
 }
 
-func (d *Druid) SetDefaults() {
+func (d *Druid) SetDefaults(kc client.Client) {
 	if d.Spec.DeletionPolicy == "" {
 		d.Spec.DeletionPolicy = DeletionPolicyDelete
 	}
@@ -445,7 +445,7 @@ func (d *Druid) SetDefaults() {
 	}
 
 	var druidVersion catalog.DruidVersion
-	err := DefaultClient.Get(context.TODO(), types.NamespacedName{
+	err := kc.Get(context.TODO(), types.NamespacedName{
 		Name: d.Spec.Version,
 	}, &druidVersion)
 	if err != nil {
@@ -564,7 +564,7 @@ func (d *Druid) SetDefaults() {
 		}
 	}
 
-	d.SetDefaultsToMetadataStorage()
+	d.SetDefaultsToMetadataStorage(kc)
 	d.SetDefaultsToZooKeeperRef()
 
 	if d.Spec.Monitor != nil {
@@ -575,6 +575,14 @@ func (d *Druid) SetDefaults() {
 			d.Spec.Monitor.Prometheus.Exporter.Port = kubedb.DruidExporterPort
 		}
 		d.Spec.Monitor.SetDefaults()
+		if d.Spec.Monitor.Prometheus != nil {
+			if d.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsUser == nil {
+				d.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsUser = druidVersion.Spec.SecurityContext.RunAsUser
+			}
+			if d.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsGroup == nil {
+				d.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsGroup = druidVersion.Spec.SecurityContext.RunAsUser
+			}
+		}
 	}
 
 	if d.Spec.EnableSSL {
@@ -590,7 +598,7 @@ func (d *Druid) SetTLSDefaults() {
 	d.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(d.Spec.TLS.Certificates, string(DruidClientCert), d.CertificateName(DruidClientCert))
 }
 
-func (d *Druid) SetDefaultsToMetadataStorage() {
+func (d *Druid) SetDefaultsToMetadataStorage(kc client.Client) {
 	if d.Spec.MetadataStorage == nil {
 		d.Spec.MetadataStorage = &MetadataStorage{}
 	}
@@ -604,7 +612,7 @@ func (d *Druid) SetDefaultsToMetadataStorage() {
 
 	if d.Spec.MetadataStorage.Type == "" {
 		if d.Spec.MetadataStorage.ExternallyManaged {
-			appBinding, err := d.GetAppBinding(d.Spec.MetadataStorage.Name, d.Spec.MetadataStorage.Namespace)
+			appBinding, err := d.GetAppBinding(kc, d.Spec.MetadataStorage.Name, d.Spec.MetadataStorage.Namespace)
 			if err != nil {
 				return
 			}
@@ -650,6 +658,16 @@ func (d *Druid) GetDefaultPVC() *core.PersistentVolumeClaimSpec {
 }
 
 func (d *Druid) setDefaultContainerSecurityContext(druidVersion *catalog.DruidVersion, podTemplate *ofst.PodTemplateSpec) {
+	if podTemplate == nil {
+		return
+	}
+	if podTemplate.Spec.SecurityContext == nil {
+		podTemplate.Spec.SecurityContext = &v1.PodSecurityContext{}
+	}
+	if podTemplate.Spec.SecurityContext.FSGroup == nil {
+		podTemplate.Spec.SecurityContext.FSGroup = druidVersion.Spec.SecurityContext.RunAsUser
+	}
+
 	container := coreutil.GetContainerByName(podTemplate.Spec.Containers, kubedb.DruidContainerName)
 	if container == nil {
 		container = &v1.Container{
@@ -738,12 +756,12 @@ func (d *Druid) ReplicasAreReady(lister pslister.PetSetLister) (bool, string, er
 	return checkReplicasOfPetSet(lister.PetSets(d.Namespace), labels.SelectorFromSet(d.OffshootLabels()), expectedItems)
 }
 
-func (d *Druid) GetAppBinding(name string, namespace string) (*appcat.AppBinding, error) {
+func (d *Druid) GetAppBinding(kc client.Client, name string, namespace string) (*appcat.AppBinding, error) {
 	appbinding := &appcat.AppBinding{}
 	appbinding.Namespace = namespace
 	appbinding.Name = name
 
-	if err := DefaultClient.Get(context.TODO(), client.ObjectKeyFromObject(appbinding), appbinding); err != nil {
+	if err := kc.Get(context.TODO(), client.ObjectKeyFromObject(appbinding), appbinding); err != nil {
 		klog.Error(err, fmt.Sprintf("failed to get appbinding for metadata storage %s/%s", name, namespace))
 		return nil, err
 	}
@@ -802,4 +820,27 @@ func (d *Druid) CertSecretVolumeName(alias DruidCertificateAlias) string {
 // mountPath will be, "/var/druid/ssl/<alias>".
 func (d *Druid) CertSecretVolumeMountPath(configDir string, cert string) string {
 	return filepath.Join(configDir, cert)
+}
+
+type DruidBind struct {
+	*Druid
+}
+
+var _ DBBindInterface = &DruidBind{}
+
+func (d *DruidBind) ServiceNames() (string, string) {
+	return d.ServiceName(), d.ServiceName()
+}
+
+func (d *DruidBind) Ports() (int, int) {
+	p := int(d.DruidNodeContainerPort(DruidNodeRoleRouters))
+	return p, p
+}
+
+func (d *DruidBind) SecretName() string {
+	return d.GetAuthSecretName()
+}
+
+func (d *DruidBind) CertSecretName() string {
+	return d.GetCertSecretName(DruidClientCert)
 }

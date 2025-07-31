@@ -27,6 +27,7 @@ import (
 	"kubedb.dev/apimachinery/apis/kubedb"
 	"kubedb.dev/apimachinery/crds"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/google/uuid"
 	promapi "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"gomodules.xyz/pointer"
@@ -45,6 +46,7 @@ import (
 	ofst "kmodules.xyz/offshoot-api/api/v2"
 	ofst_util "kmodules.xyz/offshoot-api/util"
 	pslister "kubeops.dev/petset/client/listers/apps/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (*Kafka) Hub() {}
@@ -295,6 +297,20 @@ func (k *Kafka) PVCName(alias string) string {
 	return meta_util.NameWithSuffix(k.Name, alias)
 }
 
+func (k *Kafka) IsVersionGreaterOrEqual(version string) bool {
+	v1, err := semver.NewVersion(k.Spec.Version)
+	if err != nil {
+		klog.Error(err, "Failed to parse version", "version", k.Spec.Version)
+		return false
+	}
+	v2, err := semver.NewVersion(version)
+	if err != nil {
+		klog.Error(err, "Failed to parse version", "version", version)
+		return false
+	}
+	return v1.GreaterThanEqual(v2)
+}
+
 func (k *Kafka) SetHealthCheckerDefaults() {
 	if k.Spec.HealthChecker.PeriodSeconds == nil {
 		k.Spec.HealthChecker.PeriodSeconds = pointer.Int32P(10)
@@ -307,7 +323,7 @@ func (k *Kafka) SetHealthCheckerDefaults() {
 	}
 }
 
-func (k *Kafka) SetDefaults() {
+func (k *Kafka) SetDefaults(kc client.Client) {
 	if k.Spec.Halted {
 		if k.Spec.DeletionPolicy == DeletionPolicyDoNotTerminate {
 			klog.Errorf(`Can't halt, since deletion policy is 'DoNotTerminate'`)
@@ -325,7 +341,7 @@ func (k *Kafka) SetDefaults() {
 	}
 
 	var kfVersion catalog.KafkaVersion
-	err := DefaultClient.Get(context.TODO(), types.NamespacedName{Name: k.Spec.Version}, &kfVersion)
+	err := kc.Get(context.TODO(), types.NamespacedName{Name: k.Spec.Version}, &kfVersion)
 	if err != nil {
 		klog.Errorf("can't get the kafka version object %s for %s \n", err.Error(), k.Spec.Version)
 		return
@@ -357,7 +373,7 @@ func (k *Kafka) SetDefaults() {
 
 			dbContainer := coreutil.GetContainerByName(k.Spec.Topology.Controller.PodTemplate.Spec.Containers, kubedb.KafkaContainerName)
 			if dbContainer != nil && (dbContainer.Resources.Requests == nil && dbContainer.Resources.Limits == nil) {
-				apis.SetDefaultResourceLimits(&dbContainer.Resources, kubedb.DefaultResources)
+				apis.SetDefaultResourceLimits(&dbContainer.Resources, kubedb.DefaultResourcesMemoryIntensive)
 			}
 		}
 
@@ -372,7 +388,7 @@ func (k *Kafka) SetDefaults() {
 
 			dbContainer := coreutil.GetContainerByName(k.Spec.Topology.Broker.PodTemplate.Spec.Containers, kubedb.KafkaContainerName)
 			if dbContainer != nil && (dbContainer.Resources.Requests == nil && dbContainer.Resources.Limits == nil) {
-				apis.SetDefaultResourceLimits(&dbContainer.Resources, kubedb.DefaultResources)
+				apis.SetDefaultResourceLimits(&dbContainer.Resources, kubedb.DefaultResourcesMemoryIntensive)
 			}
 		}
 	} else {
@@ -383,7 +399,7 @@ func (k *Kafka) SetDefaults() {
 
 		dbContainer := coreutil.GetContainerByName(k.Spec.PodTemplate.Spec.Containers, kubedb.KafkaContainerName)
 		if dbContainer != nil && (dbContainer.Resources.Requests == nil && dbContainer.Resources.Limits == nil) {
-			apis.SetDefaultResourceLimits(&dbContainer.Resources, kubedb.DefaultResources)
+			apis.SetDefaultResourceLimits(&dbContainer.Resources, kubedb.DefaultResourcesMemoryIntensive)
 		}
 	}
 	k.SetDefaultEnvs()
@@ -416,6 +432,20 @@ func (k *Kafka) setDefaultContainerSecurityContext(kfVersion *catalog.KafkaVersi
 	}
 	k.assignDefaultContainerSecurityContext(kfVersion, dbContainer.SecurityContext)
 	podTemplate.Spec.Containers = coreutil.UpsertContainer(podTemplate.Spec.Containers, *dbContainer)
+
+	if k.IsVersionGreaterOrEqual("4.0.0") {
+		initContainer := coreutil.GetContainerByName(podTemplate.Spec.InitContainers, kubedb.KafkaInitContainerName)
+		if initContainer == nil {
+			initContainer = &core.Container{
+				Name: kubedb.KafkaInitContainerName,
+			}
+		}
+		if initContainer.SecurityContext == nil {
+			initContainer.SecurityContext = &core.SecurityContext{}
+		}
+		k.assignDefaultContainerSecurityContext(kfVersion, initContainer.SecurityContext)
+		podTemplate.Spec.InitContainers = coreutil.UpsertContainer(podTemplate.Spec.InitContainers, *initContainer)
+	}
 }
 
 func (k *Kafka) assignDefaultContainerSecurityContext(kfVersion *catalog.KafkaVersion, sc *core.SecurityContext) {
