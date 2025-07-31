@@ -54,6 +54,10 @@ type Solr struct {
 
 // SolrSpec defines the desired state of Solr c
 type SolrSpec struct {
+	// AutoOps contains configuration of automatic ops-request-recommendation generation
+	// +optional
+	AutoOps AutoOpsSpec `json:"autoOps,omitempty"`
+
 	// Version of Solr to be deployed
 	Version string `json:"version"`
 
@@ -72,7 +76,7 @@ type SolrSpec struct {
 	Storage *core.PersistentVolumeClaimSpec `json:"storage,omitempty"`
 
 	// 	// ZooKeeper contains information for Solr to store configurations for collections
-	ZookeeperRef *kmapi.ObjectReference `json:"zookeeperRef,omitempty"`
+	ZookeeperRef *ZookeeperRef `json:"zookeeperRef,omitempty"`
 
 	// +optional
 	SolrModules []string `json:"solrModules,omitempty"`

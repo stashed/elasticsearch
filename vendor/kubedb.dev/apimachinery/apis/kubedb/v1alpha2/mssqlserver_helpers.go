@@ -35,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	kmapi "kmodules.xyz/client-go/api/v1"
 	"kmodules.xyz/client-go/apiextensions"
 	coreutil "kmodules.xyz/client-go/core/v1"
@@ -45,6 +46,7 @@ import (
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v2"
 	pslister "kubeops.dev/petset/client/listers/apps/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type MSSQLServerApp struct {
@@ -169,6 +171,21 @@ func (m *MSSQLServer) IsAvailabilityGroup() bool {
 		*m.Spec.Topology.Mode == MSSQLServerModeAvailabilityGroup
 }
 
+func (m *MSSQLServer) IsDistributedAG() bool {
+	return m.Spec.Topology != nil &&
+		m.Spec.Topology.Mode != nil &&
+		*m.Spec.Topology.Mode == MSSQLServerModeDistributedAG &&
+		m.Spec.Topology.DistributedAG != nil
+}
+
+func (m *MSSQLServer) IsCluster() bool {
+	return m.IsAvailabilityGroup() || m.IsDistributedAG()
+}
+
+func (m *MSSQLServer) DistributedAGName() string {
+	return "dag"
+}
+
 func (m *MSSQLServer) IsStandalone() bool {
 	return m.Spec.Topology == nil
 }
@@ -287,14 +304,23 @@ func (m *MSSQLServer) CAProviderClassName() string {
 }
 
 func (m *MSSQLServer) DbmLoginSecretName() string {
+	if m.Spec.Topology != nil && m.Spec.Topology.AvailabilityGroup != nil && m.Spec.Topology.AvailabilityGroup.LoginSecretName != "" {
+		return m.Spec.Topology.AvailabilityGroup.LoginSecretName
+	}
 	return metautil.NameWithSuffix(m.OffshootName(), "dbm-login")
 }
 
 func (m *MSSQLServer) MasterKeySecretName() string {
+	if m.Spec.Topology != nil && m.Spec.Topology.AvailabilityGroup != nil && m.Spec.Topology.AvailabilityGroup.MasterKeySecretName != "" {
+		return m.Spec.Topology.AvailabilityGroup.MasterKeySecretName
+	}
 	return metautil.NameWithSuffix(m.OffshootName(), "master-key")
 }
 
 func (m *MSSQLServer) EndpointCertSecretName() string {
+	if m.Spec.Topology != nil && m.Spec.Topology.AvailabilityGroup != nil && m.Spec.Topology.AvailabilityGroup.EndpointCertSecretName != "" {
+		return m.Spec.Topology.AvailabilityGroup.EndpointCertSecretName
+	}
 	return metautil.NameWithSuffix(m.OffshootName(), "endpoint-cert")
 }
 
@@ -327,7 +353,7 @@ func (m *MSSQLServer) PrimaryServiceDNS() string {
 	return fmt.Sprintf("%s.%s.svc", m.ServiceName(), m.Namespace)
 }
 
-func (m *MSSQLServer) SetDefaults() {
+func (m *MSSQLServer) SetDefaults(kc client.Client) {
 	if m == nil {
 		return
 	}
@@ -342,7 +368,7 @@ func (m *MSSQLServer) SetDefaults() {
 		if m.Spec.Replicas == nil {
 			m.Spec.Replicas = pointer.Int32P(1)
 		}
-	} else if m.IsAvailabilityGroup() {
+	} else if m.IsCluster() {
 		if m.Spec.Topology.AvailabilityGroup == nil {
 			m.Spec.Topology.AvailabilityGroup = &MSSQLServerAvailabilityGroupSpec{}
 		}
@@ -375,13 +401,15 @@ func (m *MSSQLServer) SetDefaults() {
 	}
 
 	var mssqlVersion catalog.MSSQLServerVersion
-	err := DefaultClient.Get(context.TODO(), types.NamespacedName{
+	err := kc.Get(context.TODO(), types.NamespacedName{
 		Name: m.Spec.Version,
 	}, &mssqlVersion)
 	if err != nil {
 		klog.Errorf("can't get the MSSQLServer version object %s for %s \n", m.Spec.Version, err.Error())
 		return
 	}
+
+	m.SetArbiterDefault()
 
 	m.setDefaultContainerSecurityContext(&mssqlVersion, m.Spec.PodTemplate)
 
@@ -404,6 +432,18 @@ func (m *MSSQLServer) SetDefaults() {
 		}
 		if m.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsGroup == nil {
 			m.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsGroup = mssqlVersion.Spec.SecurityContext.RunAsUser
+		}
+	}
+
+	if m.Spec.Init != nil && m.Spec.Init.Archiver != nil {
+		if m.Spec.Init.Archiver.EncryptionSecret != nil && m.Spec.Init.Archiver.EncryptionSecret.Namespace == "" {
+			m.Spec.Init.Archiver.EncryptionSecret.Namespace = m.GetNamespace()
+		}
+		if m.Spec.Init.Archiver.FullDBRepository != nil && m.Spec.Init.Archiver.FullDBRepository.Namespace == "" {
+			m.Spec.Init.Archiver.FullDBRepository.Namespace = m.GetNamespace()
+		}
+		if m.Spec.Init.Archiver.ManifestRepository != nil && m.Spec.Init.Archiver.ManifestRepository.Namespace == "" {
+			m.Spec.Init.Archiver.ManifestRepository.Namespace = m.GetNamespace()
 		}
 	}
 }
@@ -445,7 +485,7 @@ func (m *MSSQLServer) setDefaultContainerSecurityContext(mssqlVersion *catalog.M
 	m.assignDefaultContainerSecurityContext(mssqlVersion, initContainer.SecurityContext, false)
 	podTemplate.Spec.InitContainers = coreutil.UpsertContainer(podTemplate.Spec.InitContainers, *initContainer)
 
-	if m.IsAvailabilityGroup() {
+	if m.IsCluster() {
 		coordinatorContainer := coreutil.GetContainerByName(podTemplate.Spec.Containers, kubedb.MSSQLCoordinatorContainerName)
 		if coordinatorContainer == nil {
 			coordinatorContainer = &core.Container{
@@ -506,6 +546,15 @@ func (m *MSSQLServer) setDefaultContainerResourceLimits(podTemplate *ofst.PodTem
 		if coordinatorContainer != nil && (coordinatorContainer.Resources.Requests == nil && coordinatorContainer.Resources.Limits == nil) {
 			apis.SetDefaultResourceLimits(&coordinatorContainer.Resources, kubedb.CoordinatorDefaultResources)
 		}
+	}
+}
+
+func (m *MSSQLServer) SetArbiterDefault() {
+	if m.IsAvailabilityGroup() && ptr.Deref(m.Spec.Replicas, 0)%2 == 0 && m.Spec.Arbiter == nil {
+		m.Spec.Arbiter = &ArbiterSpec{
+			Resources: core.ResourceRequirements{},
+		}
+		apis.SetDefaultResourceLimits(&m.Spec.Arbiter.Resources, kubedb.DefaultArbiter(false))
 	}
 }
 
@@ -591,4 +640,19 @@ func (m *MSSQLServer) ReplicasAreReady(lister pslister.PetSetLister) (bool, stri
 	// Desire number of petSets
 	expectedItems := 1
 	return checkReplicasOfPetSet(lister.PetSets(m.Namespace), labels.SelectorFromSet(m.OffshootLabels()), expectedItems)
+}
+
+// Map SecondaryAccessMode to SQL string values
+func SecondaryAccessSQL(mode SecondaryAccessMode) string {
+	switch mode {
+	case SecondaryAccessModePassive:
+		return "NO"
+	case SecondaryAccessModeReadOnly:
+		return "READ_ONLY"
+	case SecondaryAccessModeAll:
+		return "ALL"
+	default:
+		// Fallback to NO if unset or unknown
+		return "NO"
+	}
 }
