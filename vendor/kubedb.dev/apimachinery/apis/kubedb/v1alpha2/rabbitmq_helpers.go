@@ -43,6 +43,7 @@ import (
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v2"
 	pslister "kubeops.dev/petset/client/listers/apps/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func (r *RabbitMQ) CustomResourceDefinition() *apiextensions.CustomResourceDefinition {
@@ -274,7 +275,7 @@ func (r *RabbitMQ) PVCName(alias string) string {
 	return meta_util.NameWithSuffix(r.Name, alias)
 }
 
-func (r *RabbitMQ) SetDefaults() {
+func (r *RabbitMQ) SetDefaults(kc client.Client) {
 	if r.Spec.Replicas == nil {
 		r.Spec.Replicas = pointer.Int32P(1)
 	}
@@ -288,7 +289,7 @@ func (r *RabbitMQ) SetDefaults() {
 	}
 
 	var rmVersion catalog.RabbitMQVersion
-	err := DefaultClient.Get(context.TODO(), types.NamespacedName{
+	err := kc.Get(context.TODO(), types.NamespacedName{
 		Name: r.Spec.Version,
 	}, &rmVersion)
 	if err != nil {
@@ -314,6 +315,14 @@ func (r *RabbitMQ) SetDefaults() {
 			r.Spec.Monitor.Prometheus.Exporter.Port = kubedb.RabbitMQExporterPort
 		}
 		r.Spec.Monitor.SetDefaults()
+		if r.Spec.Monitor.Prometheus != nil {
+			if r.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsUser == nil {
+				r.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsUser = rmVersion.Spec.SecurityContext.RunAsUser
+			}
+			if r.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsGroup == nil {
+				r.Spec.Monitor.Prometheus.Exporter.SecurityContext.RunAsGroup = rmVersion.Spec.SecurityContext.RunAsUser
+			}
+		}
 	}
 }
 
@@ -421,4 +430,32 @@ func (r *RabbitMQ) ReplicasAreReady(lister pslister.PetSetLister) (bool, string,
 	// Desire number of petSets
 	expectedItems := 1
 	return checkReplicasOfPetSet(lister.PetSets(r.Namespace), labels.SelectorFromSet(r.OffshootLabels()), expectedItems)
+}
+
+type RabbitMQBind struct {
+	*RabbitMQ
+}
+
+var _ DBBindInterface = &RabbitMQBind{}
+
+func (d *RabbitMQBind) ServiceNames() (string, string) {
+	return d.ServiceName(), d.DashboardServiceName()
+}
+
+func (d *RabbitMQBind) Ports() (int, int) {
+	dbPort := kubedb.RabbitMQAMQPPort
+	uiPort := kubedb.RabbitMQManagementUIPort
+	if d.Spec.TLS != nil {
+		dbPort = kubedb.RabbitMQAMQPSPort
+		uiPort = kubedb.RabbitMQManagementUIPortWithSSL
+	}
+	return dbPort, uiPort
+}
+
+func (d *RabbitMQBind) SecretName() string {
+	return d.GetAuthSecretName()
+}
+
+func (d *RabbitMQBind) CertSecretName() string {
+	return d.GetCertSecretName(RabbitmqClientCert)
 }
