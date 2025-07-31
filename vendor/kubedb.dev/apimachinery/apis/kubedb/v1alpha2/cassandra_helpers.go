@@ -19,6 +19,7 @@ package v1alpha2
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -34,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
+	kmapi "kmodules.xyz/client-go/api/v1"
 	"kmodules.xyz/client-go/apiextensions"
 	coreutil "kmodules.xyz/client-go/core/v1"
 	meta_util "kmodules.xyz/client-go/meta"
@@ -42,6 +44,7 @@ import (
 	mona "kmodules.xyz/monitoring-agent-api/api/v1"
 	ofst "kmodules.xyz/offshoot-api/api/v2"
 	pslister "kubeops.dev/petset/client/listers/apps/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type CassandraApp struct {
@@ -62,6 +65,14 @@ func (r CassandraApp) Name() string {
 
 func (r CassandraApp) Type() appcat.AppType {
 	return appcat.AppType(fmt.Sprintf("%s/%s", kubedb.GroupName, ResourceSingularCassandra))
+}
+
+func (c Cassandra) SidekickLabels(skName string) map[string]string {
+	return meta_util.OverwriteKeys(nil, kubedb.CommonSidekickLabels(), map[string]string{
+		meta_util.InstanceLabelKey: skName,
+		kubedb.SidekickOwnerName:   c.Name,
+		kubedb.SidekickOwnerKind:   c.ResourceFQN(),
+	})
 }
 
 // Owner returns owner reference to resources
@@ -159,6 +170,10 @@ func (r *Cassandra) ConfigSecretName() string {
 
 func (r *Cassandra) DefaultUserCredSecretName(username string) string {
 	return meta_util.NameWithSuffix(r.Name, strings.ReplaceAll(fmt.Sprintf("%s-cred", username), "_", "-"))
+}
+
+func (r *Cassandra) CassandraKeystoreCredSecretName() string {
+	return meta_util.NameWithSuffix(r.OffshootName(), kubedb.CassandraKeystoreSecretKey)
 }
 
 func (r *Cassandra) PVCName(alias string) string {
@@ -269,13 +284,31 @@ func (r *Cassandra) ResourceSingular() string {
 	return ResourceSingularCassandra
 }
 
-func (r *Cassandra) SetDefaults() {
+func (r *Cassandra) SetTLSDefaults() {
+	if r.Spec.TLS == nil || r.Spec.TLS.IssuerRef == nil {
+		return
+	}
+	r.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(r.Spec.TLS.Certificates, string(CassandraServerCert), r.CertificateName(CassandraServerCert))
+	r.Spec.TLS.Certificates = kmapi.SetMissingSecretNameForCertificate(r.Spec.TLS.Certificates, string(CassandraClientCert), r.CertificateName(CassandraClientCert))
+}
+
+func (r *Cassandra) SetDefaults(kc client.Client) {
 	if r.Spec.DeletionPolicy == "" {
 		r.Spec.DeletionPolicy = DeletionPolicyDelete
 	}
 
+	if r.Spec.EnableSSL {
+		if r.Spec.KeystoreCredSecret == nil {
+			r.Spec.KeystoreCredSecret = &SecretReference{
+				LocalObjectReference: core.LocalObjectReference{
+					Name: r.CassandraKeystoreCredSecretName(),
+				},
+			}
+		}
+	}
+
 	var casVersion catalog.CassandraVersion
-	err := DefaultClient.Get(context.TODO(), types.NamespacedName{
+	err := kc.Get(context.TODO(), types.NamespacedName{
 		Name: r.Spec.Version,
 	}, &casVersion)
 	if err != nil {
@@ -334,7 +367,7 @@ func (r *Cassandra) SetDefaults() {
 		}
 		r.SetHealthCheckerDefaults()
 	}
-
+	r.SetTLSDefaults()
 	r.Spec.Monitor.SetDefaults()
 
 	if r.Spec.Monitor != nil && r.Spec.Monitor.Prometheus != nil {
@@ -429,4 +462,34 @@ func (c *Cassandra) ReplicasAreReady(lister pslister.PetSetLister) (bool, string
 		expectedItems = len(c.Spec.Topology.Rack)
 	}
 	return checkReplicasOfPetSet(lister.PetSets(c.Namespace), labels.SelectorFromSet(c.OffshootLabels()), expectedItems)
+}
+
+// CertificateName returns the default certificate name and/or certificate secret name for a certificate alias
+func (m *Cassandra) CertificateName(alias CassandraCertificateAlias) string {
+	return meta_util.NameWithSuffix(m.Name, fmt.Sprintf("%s-cert", string(alias)))
+}
+
+// GetCertSecretName returns the secret name for a certificate alias if any provide,
+// otherwise returns default certificate secret name for the given alias.
+func (m *Cassandra) GetCertSecretName(alias CassandraCertificateAlias) string {
+	if m.Spec.TLS != nil {
+		name, ok := kmapi.GetCertificateSecretName(m.Spec.TLS.Certificates, string(alias))
+		if ok {
+			return name
+		}
+	}
+	return m.CertificateName(alias)
+}
+
+// CertSecretVolumeName returns the CertSecretVolumeName
+// Values will be like: client-certs, server-certs etc.
+func (c *Cassandra) CertSecretVolumeName(alias CassandraCertificateAlias) string {
+	return string(alias) + "-certs"
+}
+
+// CertSecretVolumeMountPath returns the CertSecretVolumeMountPath
+// if configDir is "/var/cassandra/ssl",
+// mountPath will be, "/var/cassandra/ssl/<alias>".
+func (c *Cassandra) CertSecretVolumeMountPath(configDir string, cert string) string {
+	return filepath.Join(configDir, cert)
 }
