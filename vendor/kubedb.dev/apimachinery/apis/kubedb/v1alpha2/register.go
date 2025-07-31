@@ -66,6 +66,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&EtcdList{},
 		&FerretDB{},
 		&FerretDBList{},
+		&Ignite{},
+		&IgniteList{},
 		&Kafka{},
 		&KafkaList{},
 		&MariaDB{},
@@ -76,6 +78,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&MongoDBList{},
 		&MySQL{},
 		&MySQLList{},
+		&Oracle{},
+		&OracleList{},
 		&PerconaXtraDB{},
 		&PerconaXtraDBList{},
 		&PgBouncer{},
@@ -100,6 +104,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&SolrList{},
 		&MSSQLServer{},
 		&MSSQLServerList{},
+		&Hazelcast{},
+		&HazelcastList{},
 	)
 
 	scheme.AddKnownTypes(SchemeGroupVersion,

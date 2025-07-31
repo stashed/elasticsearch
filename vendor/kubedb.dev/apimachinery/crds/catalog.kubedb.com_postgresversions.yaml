@@ -131,6 +131,7 @@ spec:
                 - TimescaleDB
                 - PostGIS
                 - KubeDB
+                - DocumentDB
                 - PostgreSQL
                 type: string
               exporter:
@@ -215,6 +216,11 @@ spec:
                     - backupTask
                     - restoreTask
                     type: object
+                type: object
+              tls:
+                properties:
+                  disableSSLSessionResumption:
+                    type: boolean
                 type: object
               ui:
                 items:
