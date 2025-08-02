@@ -615,5 +615,5 @@ sigs.k8s.io/structured-merge-diff/v4 v4.6.0 h1:IUA9nvMmnKWcj5jl84xn+T5MnlZKThmUW
 sigs.k8s.io/structured-merge-diff/v4 v4.6.0/go.mod h1:dDy58f92j70zLsuZVuUX5Wp9vtxXpaZnkPGWeqDfCps=
 sigs.k8s.io/yaml v1.4.0 h1:Mk1wCc2gy/F0THH0TAp1QYyJNzRm2KCLy3o5ASXVI5E=
 sigs.k8s.io/yaml v1.4.0/go.mod h1:Ejl7/uTz7PSA4eKMyQCUTnhZYNmLIl+5c2lQPGR2BPY=
-stash.appscode.dev/apimachinery v0.40.1-0.20250731053416-f9825ca2e8f5 h1:ymy/F4PBvEu5RFDWz6T5UwrRWiAjmWnLZ9GwPQyyg7Q=
-stash.appscode.dev/apimachinery v0.40.1-0.20250731053416-f9825ca2e8f5/go.mod h1:y1VgM/7CT990qqHAtE0JGg1N0sFWzmrq/9HzUU5V8dc=
+stash.appscode.dev/apimachinery v0.41.0 h1:1K4j0ADKjlQ/tGnCpctEmDx1CfJzu1HKgQC0EK5U4ZA=
+stash.appscode.dev/apimachinery v0.41.0/go.mod h1:y1VgM/7CT990qqHAtE0JGg1N0sFWzmrq/9HzUU5V8dc=
