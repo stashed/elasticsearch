@@ -22,7 +22,7 @@ require (
 	kubedb.dev/apimachinery v0.56.0
 	kubedb.dev/db-client-go v0.11.0
 	sigs.k8s.io/controller-runtime v0.20.4
-	stash.appscode.dev/apimachinery v0.41.0
+	stash.appscode.dev/apimachinery v0.42.0
 )
 
 require (
