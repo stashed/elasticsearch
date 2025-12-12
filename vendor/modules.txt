@@ -240,14 +240,14 @@ go.bytebuilders.dev/license-proxyserver/apis/proxyserver/v1alpha1
 go.bytebuilders.dev/license-proxyserver/client/clientset/versioned
 go.bytebuilders.dev/license-proxyserver/client/clientset/versioned/scheme
 go.bytebuilders.dev/license-proxyserver/client/clientset/versioned/typed/proxyserver/v1alpha1
-# go.bytebuilders.dev/license-verifier v0.14.9
-## explicit; go 1.23.0
+# go.bytebuilders.dev/license-verifier v0.14.10
+## explicit; go 1.24.0
 go.bytebuilders.dev/license-verifier
 go.bytebuilders.dev/license-verifier/apis/licenses
 go.bytebuilders.dev/license-verifier/apis/licenses/v1alpha1
 go.bytebuilders.dev/license-verifier/info
-# go.bytebuilders.dev/license-verifier/kubernetes v0.14.9
-## explicit; go 1.23.0
+# go.bytebuilders.dev/license-verifier/kubernetes v0.14.10
+## explicit; go 1.24.0
 go.bytebuilders.dev/license-verifier/kubernetes
 # go.virtual-secrets.dev/apimachinery v0.0.1
 ## explicit; go 1.23.0
@@ -256,8 +256,8 @@ go.virtual-secrets.dev/apimachinery/crds
 # golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
 ## explicit; go 1.22.0
 golang.org/x/exp/maps
-# golang.org/x/net v0.40.0
-## explicit; go 1.23.0
+# golang.org/x/net v0.47.0
+## explicit; go 1.24.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
@@ -271,16 +271,16 @@ golang.org/x/net/publicsuffix
 ## explicit; go 1.23.0
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.33.0
-## explicit; go 1.23.0
+# golang.org/x/sys v0.38.0
+## explicit; go 1.24.0
 golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/term v0.32.0
-## explicit; go 1.23.0
+# golang.org/x/term v0.37.0
+## explicit; go 1.24.0
 golang.org/x/term
-# golang.org/x/text v0.25.0
-## explicit; go 1.23.0
+# golang.org/x/text v0.31.0
+## explicit; go 1.24.0
 golang.org/x/text/cases
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
@@ -1034,8 +1034,8 @@ sigs.k8s.io/structured-merge-diff/v4/value
 ## explicit; go 1.12
 sigs.k8s.io/yaml
 sigs.k8s.io/yaml/goyaml.v2
-# stash.appscode.dev/apimachinery v0.42.0
-## explicit; go 1.23.0
+# stash.appscode.dev/apimachinery v0.42.1-0.20251212070131-ba26c6b88bc6
+## explicit; go 1.24.0
 stash.appscode.dev/apimachinery/apis
 stash.appscode.dev/apimachinery/apis/repositories
 stash.appscode.dev/apimachinery/apis/repositories/v1alpha1
