@@ -184,7 +184,7 @@ func (opt *esOptions) restoreElasticsearch(targetRef api_v1beta1.TargetRef) (*re
 		return nil, err
 	}
 
-	session.cmd.Args = append(session.cmd.Args, []interface{}{
+	session.cmd.Args = append(session.cmd.Args, []any{
 		"--direction=load",
 		fmt.Sprintf(`--input=%v`, opt.interimDataDir),
 		fmt.Sprintf(`--output=%v`, url),
