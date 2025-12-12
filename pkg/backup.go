@@ -221,7 +221,7 @@ func (opt *esOptions) backupElasticsearch(targetRef api_v1beta1.TargetRef) (*res
 	if err != nil {
 		return nil, err
 	}
-	session.cmd.Args = append(session.cmd.Args, []interface{}{
+	session.cmd.Args = append(session.cmd.Args, []any{
 		fmt.Sprintf(`--input=%v`, url),
 		fmt.Sprintf(`--output=%v`, opt.interimDataDir),
 	}...)

@@ -1,13 +1,11 @@
 module stash.appscode.dev/elasticsearch
 
-go 1.23.0
-
-toolchain go1.24.4
+go 1.24.0
 
 require (
 	github.com/spf13/cobra v1.9.1
-	go.bytebuilders.dev/license-verifier/kubernetes v0.14.9
-	golang.org/x/text v0.25.0
+	go.bytebuilders.dev/license-verifier/kubernetes v0.14.10
+	golang.org/x/text v0.31.0
 	gomodules.xyz/flags v0.1.3
 	gomodules.xyz/go-sh v0.1.0
 	gomodules.xyz/logs v0.0.7
@@ -22,7 +20,7 @@ require (
 	kubedb.dev/apimachinery v0.56.0
 	kubedb.dev/db-client-go v0.11.0
 	sigs.k8s.io/controller-runtime v0.20.4
-	stash.appscode.dev/apimachinery v0.42.0
+	stash.appscode.dev/apimachinery v0.42.1-0.20251212070131-ba26c6b88bc6
 )
 
 require (
@@ -86,13 +84,13 @@ require (
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.bytebuilders.dev/license-proxyserver v0.0.20 // indirect
-	go.bytebuilders.dev/license-verifier v0.14.9 // indirect
+	go.bytebuilders.dev/license-verifier v0.14.10 // indirect
 	go.virtual-secrets.dev/apimachinery v0.0.1 // indirect
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/term v0.32.0 // indirect
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
 	gomodules.xyz/clock v0.0.0-20200817085942-06523dba733f // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
