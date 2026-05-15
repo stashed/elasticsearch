@@ -69,4 +69,4 @@ case $GITHUB_BASE_REF in
         ;;
 esac
 
-gh api "$api_url" -f body="$msg"
+hub api "$api_url" -f body="$msg"
