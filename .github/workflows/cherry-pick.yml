@@ -24,7 +24,7 @@ jobs:
 
       - name: Prepare git
         env:
-          GITHUB_USER: ${{ github.actor }}
+          GITHUB_USER: 1gtm
           GITHUB_TOKEN: ${{ steps.lgtm-app-token.outputs.token }}
         run: |
           git config --global user.name "${GITHUB_USER}"
@@ -33,7 +33,7 @@ jobs:
 
       - name: Update release branches
         env:
-          GITHUB_USER: ${{ github.actor }}
+          GITHUB_USER: 1gtm
           GITHUB_TOKEN: ${{ steps.lgtm-app-token.outputs.token }}
         run: |
           ./hack/scripts/cherry-pick.sh
