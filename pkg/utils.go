@@ -160,7 +160,8 @@ func must(v []byte, err error) string {
 }
 
 func writeAuthFile(filename string, cred *core.Secret) error {
-	authKeys := fmt.Sprintf("user=%s\npassword=%q",
+	authKeys := fmt.Sprintf(
+		"user=%s\npassword=%q",
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthUsernameKey, ESUser)),
 		must(meta_util.GetBytesForKeys(cred.Data, core.BasicAuthPasswordKey, ESPassword)),
 	)
